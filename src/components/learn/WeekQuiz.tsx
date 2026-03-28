@@ -7,13 +7,24 @@ const labels = ["A", "B", "C", "D"] as const;
 
 type Props = {
   questions: QuizQuestion[];
+  /** Display label; use 0 for mixed/cumulative quizzes */
   week: number;
+  /** Overrides default “Week N quiz” heading */
+  title?: string;
 };
 
-export function WeekQuiz({ questions, week }: Props) {
+export function WeekQuiz({ questions, week, title }: Props) {
   const [choices, setChoices] = useState<(0 | 1 | 2 | 3 | null)[]>(() => questions.map(() => null));
   const [submitted, setSubmitted] = useState(false);
   const [warnIncomplete, setWarnIncomplete] = useState(false);
+
+  if (questions.length === 0) {
+    return (
+      <p className="rounded-xl border border-bloom-brown/15 bg-white p-4 text-sm text-bloom-brown dark:border-bloom-gold/20 dark:bg-bloom-ink/50 dark:text-bloom-cream">
+        No questions to display.
+      </p>
+    );
+  }
 
   const correct = questions.filter((q, idx) => choices[idx] === q.correctIndex).length;
 
@@ -29,7 +40,7 @@ export function WeekQuiz({ questions, week }: Props) {
   return (
     <div className="rounded-xl border border-bloom-brown/15 bg-white p-4 dark:border-bloom-gold/20 dark:bg-bloom-ink/50">
       <h3 className="font-display text-sm font-semibold text-bloom-ink dark:text-bloom-cream">
-        Week {week} quiz (10 questions)
+        {title ?? `Week ${week} quiz (${questions.length} questions)`}
       </h3>
       <ol className="mt-4 space-y-6 text-sm">
         {questions.map((q, qi) => (

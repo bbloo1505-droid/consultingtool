@@ -1,12 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import type { GlossaryEntry } from "@/types/learning";
+import { cardIdForGlossary, rateCard, type SrsRating } from "@/lib/flashcard-srs";
 
 type Props = {
   entries: GlossaryEntry[];
   week: number;
 };
+
+const BTN =
+  "rounded-lg border px-2 py-1.5 text-xs font-medium transition dark:border-bloom-gold/30";
 
 export function FlashcardDeck({ entries, week }: Props) {
   const [i, setI] = useState(0);
@@ -15,6 +19,16 @@ export function FlashcardDeck({ entries, week }: Props) {
   if (entries.length === 0) return null;
 
   const cur = entries[i];
+  const cardId = cardIdForGlossary(week, i);
+
+  const onRate = useCallback(
+    (r: SrsRating) => {
+      rateCard(cardId, r);
+      setFlipped(false);
+      setI((x) => (x + 1 >= entries.length ? 0 : x + 1));
+    },
+    [cardId, entries.length],
+  );
 
   return (
     <div className="rounded-xl border border-bloom-brown/15 bg-white p-4 dark:border-bloom-gold/20 dark:bg-bloom-ink/50">
@@ -22,7 +36,7 @@ export function FlashcardDeck({ entries, week }: Props) {
         Flashcards — Week {week}
       </h3>
       <p className="mt-1 text-xs text-bloom-brown/70 dark:text-bloom-cream/60">
-        Click the card to flip. Term on front, definition on back.
+        Flip the card, then rate how well you knew it—scheduling uses spaced repetition (stored in this browser).
       </p>
       <button
         type="button"
@@ -35,6 +49,24 @@ export function FlashcardDeck({ entries, week }: Props) {
           <p className="font-semibold text-bloom-ink dark:text-bloom-cream">{cur.term}</p>
         )}
       </button>
+
+      {flipped ? (
+        <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="Rate recall">
+          <button type="button" className={`${BTN} border-red-300/90 bg-red-50 dark:border-red-500/40 dark:bg-red-950/35`} onClick={() => onRate("again")}>
+            Again
+          </button>
+          <button type="button" className={`${BTN} border-amber-400/80 bg-amber-50 dark:border-amber-500/40 dark:bg-amber-950/30`} onClick={() => onRate("hard")}>
+            Hard
+          </button>
+          <button type="button" className={`${BTN} border-bloom-brown/25 bg-bloom-cream/60 dark:border-bloom-gold/30 dark:bg-bloom-brown/35`} onClick={() => onRate("good")}>
+            Good
+          </button>
+          <button type="button" className={`${BTN} border-emerald-500/50 bg-emerald-50 dark:border-emerald-500/40 dark:bg-emerald-950/35`} onClick={() => onRate("easy")}>
+            Easy
+          </button>
+        </div>
+      ) : null}
+
       <div className="mt-3 flex items-center justify-between gap-2">
         <button
           type="button"

@@ -1,7 +1,7 @@
-import type { TermWeekContent } from "@/types/learning";
+import type { TermWeekContentCore } from "@/types/learning";
 
 /** Term 1 weeks 1–7 — imported by term1-weeks.ts */
-export const TERM1_PART_A: TermWeekContent[] = [
+export const TERM1_PART_A: TermWeekContentCore[] = [
   {
     week: 1,
     title: "What environmental consultants actually do",

@@ -1,7 +1,7 @@
-import type { TermWeekContent } from "@/types/learning";
+import type { TermWeekContentCore } from "@/types/learning";
 
 /** Term 1 weeks 8–13 */
-export const TERM1_PART_B: TermWeekContent[] = [
+export const TERM1_PART_B: TermWeekContentCore[] = [
   {
     week: 8,
     title: "Coordinate systems and projections",
@@ -80,6 +80,8 @@ Always name layers and save processing steps for reproducibility.`,
     introduction: `Conceptual Site Models (CSMs) describe sources, pathways, receptors for contamination and stressors. Even desktop work benefits from sketching pathways: geology controls permeability; surface water links to erosion and receptors.
 
 Three mini-CSMs (e.g. fuel leak to groundwater; sediment runoff; dust) build pattern recognition.`,
+    mapPracticeHint:
+      "Sketch a simple SPR chain for your AOI conceptually—then open Screening and note one layer that informs ‘source’ vs ‘pathway’ thinking (even if the CSM is not fully spatial).",
     prompts: {
       lecture: `Teach source-pathway-receptor with simple diagrams for soil, groundwater, surface water.`,
       tutorial: `What is a pathway that GIS polygons might miss?`,
@@ -115,6 +117,8 @@ Three mini-CSMs (e.g. fuel leak to groundwater; sediment runoff; dust) build pat
     introduction: `Fate and transport concepts link chemistry and physics: partitioning, degradation, sorption, advection-dispersion at a high level. Your technical note should connect plausible pathways to what evidence would reduce uncertainty (sampling, hydrogeology).
 
 Stay humble: desktop notes propose hypotheses.`,
+    mapPracticeHint:
+      "Screening may not show chemistry—use it to anchor ‘where’ and ‘what overlays’ while you write hypotheses; list one map output you would cite in a pathway paragraph vs one thing only field data can answer.",
     prompts: {
       lecture: `Introduce fate and transport vocabulary for graduates without a chemistry PhD.`,
       tutorial: `Difference between conservative vs reactive behaviour at concept level.`,

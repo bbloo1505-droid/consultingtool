@@ -1,13 +1,19 @@
-﻿import Image from "next/image";
+import Image from "next/image";
 
 type SiteHeaderProps = {
   title: string;
   subtitle: string;
+  className?: string;
 };
 
-export function SiteHeader({ title, subtitle }: SiteHeaderProps) {
+export function SiteHeader({ title, subtitle, className }: SiteHeaderProps) {
   return (
-    <header className="border-b border-bloom-brown/20 bg-white/95 shadow-sm backdrop-blur-sm dark:border-bloom-gold/25 dark:bg-bloom-ink/95">
+    <header
+      className={
+        "border-b border-bloom-brown/20 bg-white/95 shadow-sm backdrop-blur-sm dark:border-bloom-gold/25 dark:bg-bloom-ink/95" +
+        (className ? ` ${className}` : "")
+      }
+    >
       <div className="mx-auto flex max-w-7xl flex-col gap-4 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:gap-8">
         <div className="flex min-w-0 items-start gap-4">
           <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg bg-white shadow-sm ring-1 ring-bloom-brown/25 dark:bg-bloom-ink dark:ring-bloom-gold/35">
