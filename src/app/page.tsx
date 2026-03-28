@@ -1,4 +1,4 @@
-﻿import { MapScreen } from "@/components/map/MapScreen";
+import { HomeTabs } from "@/components/HomeTabs";
 import { SiteHeader } from "@/components/SiteHeader";
 
 export default function Home() {
@@ -6,11 +6,9 @@ export default function Home() {
     <div className="flex min-h-screen flex-col">
       <SiteHeader
         title="QLD environmental screening"
-        subtitle="Brisbane-first prototype - MSES layers via Queensland Government ArcGIS services"
+        subtitle="Screen Queensland map layers, export reports, and study Term 1 graduate topics in the Learn tab."
       />
-      <main className="flex min-h-0 flex-1 flex-col px-4 py-6">
-        <MapScreen />
-      </main>
+      <HomeTabs />
     </div>
   );
 }
