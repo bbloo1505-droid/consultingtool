@@ -1,0 +1,153 @@
+{
+  "mses-protected-estates": {
+    "title": "MSES - protected area (estates)",
+    "summary": "State-protected conservation areas mapped as MSES. Intersection suggests overlap with protected area estate; confirm boundaries and planning controls.",
+    "nextSteps": "Confirm against cadastre; check planning scheme and DES guidance for works near protected areas.",
+    "references": [
+      { "label": "DES Matters of State Environmental Significance", "url": "https://www.qld.gov.au/environment/plants-animals/plants/protected-plants" }
+    ]
+  },
+  "mses-nature-refuges": {
+    "title": "MSES - nature refuges",
+    "summary": "Private protected areas under conservation agreements. Overlap can affect access, disturbance, and offsets.",
+    "nextSteps": "Identify agreement constraints and align clearing/access plans.",
+    "references": [{ "label": "Nature Conservation Act 1992 (Qld) - overview", "url": "https://www.legislation.qld.gov.au/browse/inforce" }]
+  },
+  "mses-marine-park-highly": {
+    "title": "MSES - marine park (highly protected)",
+    "summary": "Highly protected marine park zones under state marine park estate. Works and access can be tightly constrained.",
+    "nextSteps": "Confirm zone labels with official charts; check marine park permitting pathways.",
+    "references": [{ "label": "Queensland marine parks", "url": "https://www.qld.gov.au/environment/coasts-waterways/marine-parks" }]
+  },
+  "mses-fish-habitat": {
+    "title": "MSES - declared fish habitat (A/B)",
+    "summary": "Declared fish habitat areas protect fisheries and aquatic habitat. Works affecting waterways or marine plants can trigger assessment pathways.",
+    "nextSteps": "Check fisheries and development assessment pathways; marine plant and waterway works.",
+    "references": [{ "label": "Fisheries Act 1994 (Qld)", "url": "https://www.legislation.qld.gov.au/browse/inforce" }]
+  },
+  "mses-offset-register": {
+    "title": "MSES - legally secured offset (register)",
+    "summary": "Areas recorded on the offset register can signal existing biodiversity commitments and land-use context.",
+    "nextSteps": "Cross-check offset register records and any development conditions affecting the site.",
+    "references": [{ "label": "Queensland environmental offsets policy", "url": "https://www.qld.gov.au/environment/plants-animals/plants/protected-plants" }]
+  },
+  "mses-offset-vegetation": {
+    "title": "MSES - legally secured offset (vegetation offsets)",
+    "summary": "Vegetation offset areas secured for biodiversity outcomes; intersection may affect clearing and compensation framing.",
+    "nextSteps": "Review offset agreements and clearing/impact pathways.",
+    "references": [{ "label": "Environmental offsets framework", "url": "https://www.qld.gov.au/environment/plants-animals/plants/protected-plants" }]
+  },
+  "mses-hev-wetland": {
+    "title": "MSES - high ecological value waters (wetland)",
+    "summary": "Declared high ecological value wetlands are sensitive aquatic features.",
+    "nextSteps": "Confirm mapping with field delineation; review wetland assessment frameworks.",
+    "references": []
+  },
+  "mses-hes-wetlands": {
+    "title": "MSES - high ecological significance wetlands",
+    "summary": "Wetlands of high ecological significance matter for biodiversity and hydrology.",
+    "nextSteps": "Plan wetland delineation and hydrology impacts; consider buffers and offsets.",
+    "references": []
+  },
+  "mses-sea-precinct": {
+    "title": "MSES - strategic environmental area (designated precinct)",
+    "summary": "Strategic environmental area precincts can elevate scrutiny for certain development types in regional planning frameworks.",
+    "nextSteps": "Align with regional plan and local planning instruments for the precinct.",
+    "references": [{ "label": "Regional planning (Qld)", "url": "https://www.statedevelopment.qld.gov.au/" }]
+  },
+  "mses-regveg-cat-b": {
+    "title": "MSES - regulated vegetation (category B)",
+    "summary": "Category B (endangered or of concern RE) vegetation is highly regulated; clearing may require approvals and offsets.",
+    "nextSteps": "Confirm RE mapping; vegetation survey and clearing pathways.",
+    "references": [{ "label": "Vegetation management", "url": "https://www.qld.gov.au/environment/plants-animals/plants/protected-plants" }]
+  },
+  "mses-regveg-cat-c": {
+    "title": "MSES - regulated vegetation (category C)",
+    "summary": "Category C regulated vegetation can still trigger clearing codes and assessment depending on RE and location.",
+    "nextSteps": "Confirm RE and clearing categories against the regulated vegetation management map.",
+    "references": []
+  },
+  "mses-regveg-cat-r-gbr": {
+    "title": "MSES - regulated vegetation (GBR riverine)",
+    "summary": "Great Barrier Reef catchment riverine category can interact with water quality and clearing rules.",
+    "nextSteps": "Check GBR catchment policies and waterway buffers.",
+    "references": [{ "label": "Reef protection", "url": "https://www.qld.gov.au/environment/coasts-waterways/great-barrier-reef" }]
+  },
+  "mses-regveg-essential-habitat": {
+    "title": "MSES - regulated vegetation (essential habitat)",
+    "summary": "Essential habitat mapping highlights areas important for species persistence; field verification is often needed.",
+    "nextSteps": "Cross-check species records and survey design.",
+    "references": []
+  },
+  "mses-regveg-100m-wetland": {
+    "title": "MSES - regulated vegetation (100m from wetland)",
+    "summary": "Mapped buffer around wetlands interacts with regulated vegetation rules.",
+    "nextSteps": "Confirm wetland delineation and buffer applicability on the ground.",
+    "references": []
+  },
+  "mses-wildlife-ev": {
+    "title": "MSES - wildlife habitat (endangered or vulnerable)",
+    "summary": "Mapped habitat for EV species triggers biodiversity and assessment attention.",
+    "nextSteps": "Align with species survey and impact assessment pathways.",
+    "references": []
+  },
+  "mses-wildlife-special-lc": {
+    "title": "MSES - wildlife habitat (special least concern)",
+    "summary": "Special least concern animal habitat can still be material for local planning and conditions.",
+    "nextSteps": "Check local overlays and species-specific guidance.",
+    "references": []
+  },
+  "mses-koala-core": {
+    "title": "MSES - SEQ koala habitat (core)",
+    "summary": "SEQ koala habitat mapping signals planning and biodiversity considerations.",
+    "nextSteps": "Cross-check local planning scheme; targeted survey if impacts likely.",
+    "references": []
+  },
+  "mses-koala-refined": {
+    "title": "MSES - SEQ koala habitat (locally refined)",
+    "summary": "Locally refined koala habitat for local context.",
+    "nextSteps": "Align with local overlays and field survey.",
+    "references": []
+  },
+  "mses-special-wildlife-reserves": {
+    "title": "MSES - special wildlife reserves",
+    "summary": "Special wildlife reserves are high-conservation tenures with strict controls on use and access.",
+    "nextSteps": "Confirm tenure boundaries and statutory constraints before works.",
+    "references": []
+  },
+  "qld-fire-scar-current": {
+    "title": "Fire scar (historical burns)",
+    "summary": "Composite fire scar mapping shows where fire has been mapped on the landscape; useful context, not a forward bushfire hazard layer.",
+    "nextSteps": "Pair with local bushfire hazard overlays and site history; interpret alongside vegetation and access.",
+    "references": [{ "label": "Rural Fire Service Queensland", "url": "https://www.ruralfire.qld.gov.au/" }]
+  },
+  "qld-wet-tropics-wha": {
+    "title": "Wet Tropics World Heritage Area",
+    "summary": "World Heritage boundaries in the Wet Tropics bioregion carry Commonwealth and state obligations for protection and assessment.",
+    "nextSteps": "If relevant, cross-check EPBC matters and Wet Tropics management provisions.",
+    "references": [
+      { "label": "Wet Tropics Management Authority", "url": "https://www.wettropics.gov.au/" },
+      { "label": "EPBC Act (DCCEEW)", "url": "https://www.dcceew.gov.au/environment/epbc" }
+    ]
+  },
+  "qld-world-heritage-areas": {
+    "title": "World heritage areas (Queensland)",
+    "summary": "State-published World Heritage polygons for Queensland; use as indicative intersection with your AOI.",
+    "nextSteps": "Verify against official WH boundary datasets and EPBC PMST where Commonwealth triggers may apply.",
+    "references": [
+      { "label": "EPBC Protected Matters Search Tool", "url": "https://www.dcceew.gov.au/environment/epbc/online-services/pmst" }
+    ]
+  },
+  "brisbane-flood-1893": {
+    "title": "Historical flood 1893 (Brisbane)",
+    "summary": "Historical flood extent for context; not a current hydraulic model or planning flood level.",
+    "nextSteps": "Use current flood studies and council mapping for design flood levels and planning assessment.",
+    "references": [{ "label": "Brisbane City Council flooding", "url": "https://www.brisbane.qld.gov.au/community-and-safety/emergency-management-and-safety/flooding-in-brisbane" }]
+  },
+  "brisbane-flood-1974": {
+    "title": "Historical flood 1974 (Brisbane/Ipswich)",
+    "summary": "Historical flood extent for context; not a substitute for contemporary flood hazard layers.",
+    "nextSteps": "Cross-check FloodCheck and local government flood mapping for your site.",
+    "references": [{ "label": "Queensland FloodCheck", "url": "https://www.qld.gov.au/environment/water/flood" }]
+  }
+}

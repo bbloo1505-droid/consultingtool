@@ -1,26 +1,53 @@
 @import "tailwindcss";
 
+/* Sunflower brand: yellow #F9B42A, center #3E2723, accent #A17336 */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #faf6ee;
+  --foreground: #3e2723;
+  --bloom-gold: #f9b42a;
+  --bloom-gold-light: #fbc85a;
+  --bloom-brown: #a17336;
+  --bloom-ink: #3e2723;
+  --bloom-cream: #faf6ee;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #2a2422;
+    --foreground: #faf6ee;
+  }
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-bloom-gold: var(--bloom-gold);
+  --color-bloom-gold-light: var(--bloom-gold-light);
+  --color-bloom-brown: var(--bloom-brown);
+  --color-bloom-ink: var(--bloom-ink);
+  --color-bloom-cream: var(--bloom-cream);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-display: var(--font-lora);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+.font-display {
+  font-family: var(--font-lora), ui-serif, Georgia, serif;
+}
+
+/* Printable report (A4-friendly) */
+@media print {
+  @page {
+    margin: 14mm 16mm;
+  }
+  .report-doc {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
 }

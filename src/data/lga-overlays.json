@@ -1,0 +1,27 @@
+{
+  "cairns": [],
+  "brisbane": [
+    {
+      "id": "brisbane-flood-1893",
+      "domain": 11,
+      "tier": "watch",
+      "dataMode": "spatial",
+      "name": "Brisbane Flood 1893 (historical extent)",
+      "serviceBaseUrl": "https://spatial-gis.information.qld.gov.au/arcgis/rest/services/FloodCheck/Floods_Brisbane_1893/MapServer",
+      "layerId": 0,
+      "glossaryKey": "brisbane-flood-1893",
+      "attribution": "State of Queensland, FloodCheck historical flood mapping"
+    },
+    {
+      "id": "brisbane-flood-1974",
+      "domain": 11,
+      "tier": "watch",
+      "dataMode": "spatial",
+      "name": "Brisbane and Ipswich Floods 1974 (historical extent)",
+      "serviceBaseUrl": "https://spatial-gis.information.qld.gov.au/arcgis/rest/services/FloodCheck/Floods_BrisbaneAndIpswich_1974/MapServer",
+      "layerId": 0,
+      "glossaryKey": "brisbane-flood-1974",
+      "attribution": "State of Queensland, FloodCheck historical flood mapping"
+    }
+  ]
+}

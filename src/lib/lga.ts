@@ -1,0 +1,10 @@
+import type { LgaId } from "@/types/screening";
+
+/** Parses request body `lga` string to a known pack id. */
+export function parseLga(raw: unknown): LgaId {
+  const s = typeof raw === "string" ? raw : "";
+  if (s === "brisbane" || s === "gold_coast" || s === "sunshine_coast" || s === "cairns") {
+    return s;
+  }
+  return "qld";
+}

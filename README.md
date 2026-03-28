@@ -1,36 +1,36 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# QLD environmental screening (prototype)
 
-## Getting Started
+Next.js app in `env-screening/` - draw an area of interest on a map, query live Queensland spatial layers (expanded **MSES**, fire scar, World Heritage boundaries, optional Brisbane historical flood overlays from `lga-overlays.json`) via `POST /api/screen`, and open a printable HTML report. The API also returns **register hint links** (PMST / MNES / Qld wildlife pages) and an **AOI centroid** map link (not cadastral title).
 
-First, run the development server:
+## Run locally
 
 ```bash
+cd env-screening
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## How data access works
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- No API key is required for the public MapServer `query` endpoints used here.
+- Requests go **through this app** (not straight from the browser) so a realistic `User-Agent` is sent and CORS is avoided.
+- Base layers: `src/data/layers.json`. Optional LGA packs (e.g. Brisbane): `src/data/lga-overlays.json`. Glossary and reference links: `src/data/glossary.json`. Request body may include `lga`: `"qld"` (default) or `"brisbane"`.
 
-## Learn More
+## Limits
 
-To learn more about Next.js, take a look at the following resources:
+- User-drawn polygons are **not** a substitute for surveyed lot boundaries.
+- Some layers are scale-dependent in the source service (see Queensland metadata).
+- PMST / MNES / registers: **links only** (see API `registerHints`) - not automated spatial queries. Add more catalog layers over time as needed.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Stack
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- Next.js (App Router), TypeScript, Tailwind
+- MapLibre GL + Mapbox Draw (polygon AOI)
 
-## Deploy on Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Map draw stack
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Uses **maplibre-gl v4** with **maplibre-gl-draw** so polygon edit styles stay compatible (MapLibre v5 + @mapbox/mapbox-gl-draw throws line-dasharray validation errors in the browser).
+
