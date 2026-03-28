@@ -312,13 +312,15 @@ export default function ReportPage() {
             The AOI was{" "}
             {session?.aoiSource === "draw" || !session?.aoiSource
               ? "digitised in the web map"
-              : session.aoiSource === "geojson" || session.aoiSource === "upload"
-                ? "supplied as uploaded GeoJSON"
-                : session.aoiSource === "kml" || session.aoiSource === "kmz"
-                  ? "supplied from uploaded KML/KMZ"
-                  : session.aoiSource === "shapefile"
-                    ? "supplied from an uploaded shapefile (.zip)"
-                    : "loaded from a file upload"}{" "}
+              : session.aoiSource === "address"
+                ? "loaded from a Queensland address search (geocoded point intersected with DCDB cadastral parcels)"
+                : session.aoiSource === "geojson" || session.aoiSource === "upload"
+                  ? "supplied as uploaded GeoJSON"
+                  : session.aoiSource === "kml" || session.aoiSource === "kmz"
+                    ? "supplied from uploaded KML/KMZ"
+                    : session.aoiSource === "shapefile"
+                      ? "supplied from an uploaded shapefile (.zip)"
+                      : "loaded from a file upload"}{" "}
             and normalised to WGS84 where
             required (including correction if coordinates appeared as lat/lng order swap or Web Mercator metres).
             {(session?.bufferMeters ?? 0) > 0

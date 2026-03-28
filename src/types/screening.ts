@@ -80,7 +80,7 @@ export type StoredScreeningSession = {
   project?: ProjectMetadata;
   bufferMeters?: number;
   /** draw | generic upload | specific format from boundary file parser */
-  aoiSource?: "draw" | "upload" | "geojson" | "kml" | "kmz" | "shapefile";
+  aoiSource?: "draw" | "upload" | "geojson" | "kml" | "kmz" | "shapefile" | "address";
 };
 
 export type ScreenResponse = {

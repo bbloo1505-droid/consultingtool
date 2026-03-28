@@ -14,7 +14,7 @@ function packDescription(lga: string | undefined): string {
   }
 }
 
-export type MethodsAoiSource = "draw" | "upload" | "geojson" | "kml" | "kmz" | "shapefile";
+export type MethodsAoiSource = "draw" | "upload" | "geojson" | "kml" | "kmz" | "shapefile" | "address";
 
 export function buildMethodsParagraph(
   data: ScreenResponse,
@@ -28,11 +28,13 @@ export function buildMethodsParagraph(
   const aoi =
     opts.aoiSource === "draw"
       ? "The area of interest was digitised as a polygon in the web map"
-      : opts.aoiSource === "geojson" || opts.aoiSource === "upload"
-        ? "The area of interest was supplied as a GeoJSON polygon uploaded by the user"
-        : opts.aoiSource === "kml" || opts.aoiSource === "kmz"
-          ? "The area of interest was supplied from a KML or KMZ file uploaded by the user"
-          : "The area of interest was supplied from a shapefile (.zip) uploaded by the user";
+      : opts.aoiSource === "address"
+        ? "The area of interest was derived as the Queensland cadastral parcel polygon returned for the searched address (OpenStreetMap geocode to a point, then DCDB parcel intersect via Queensland Government spatial services—not a substitute for surveyed title boundaries)"
+        : opts.aoiSource === "geojson" || opts.aoiSource === "upload"
+          ? "The area of interest was supplied as a GeoJSON polygon uploaded by the user"
+          : opts.aoiSource === "kml" || opts.aoiSource === "kmz"
+            ? "The area of interest was supplied from a KML or KMZ file uploaded by the user"
+            : "The area of interest was supplied from a shapefile (.zip) uploaded by the user";
   const buf =
     opts.bufferMeters > 0
       ? ` A buffer of ${opts.bufferMeters} m was applied to that polygon before querying (geodesic buffer, WGS84).`

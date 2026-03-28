@@ -75,6 +75,9 @@ export function MapScreen() {
   const [lastSession, setLastSession] = useState<StoredScreeningSession | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [addressQuery, setAddressQuery] = useState("");
+  const [addressLoading, setAddressLoading] = useState(false);
+  const [addressError, setAddressError] = useState<string | null>(null);
   const [copyMsg, setCopyMsg] = useState<string | null>(null);
 
   useEffect(() => {
@@ -152,7 +155,7 @@ export function MapScreen() {
       const fc = draw.getAll();
       const n = fc.features.filter((f) => f.geometry?.type === "Polygon" || f.geometry?.type === "MultiPolygon").length;
       if (n === 0) {
-        setStatus("Draw a polygon on the map or upload GeoJSON to represent your site.");
+        setStatus("Draw a polygon, search a Queensland address for the lot boundary, or upload a boundary file.");
       } else {
         setStatus("Polygon ready. Choose buffer if needed, then run screening.");
       }
@@ -252,6 +255,52 @@ export function MapScreen() {
       setStatus("Boundary loaded on map. Adjust buffer if needed, then run screening.");
     } catch (err) {
       setUploadError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  const onAddressParcelSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAddressError(null);
+    const draw = drawRef.current;
+    if (!draw) return;
+    const q = addressQuery.trim();
+    if (!q) {
+      setAddressError("Enter a Queensland street address.");
+      return;
+    }
+    setAddressLoading(true);
+    try {
+      const res = await fetch("/api/address-parcel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ address: q }),
+      });
+      const json = (await res.json()) as {
+        error?: string;
+        feature?: Feature<Polygon | MultiPolygon>;
+        parcelSummary?: string;
+      };
+      if (!res.ok) {
+        throw new Error(json.error ?? res.statusText);
+      }
+      if (!json.feature || !json.feature.geometry) {
+        throw new Error("Invalid response from address lookup.");
+      }
+      draw.deleteAll();
+      suppressDrawSourceRef.current = true;
+      draw.add(json.feature as GeoJSON.Feature);
+      setTimeout(() => {
+        suppressDrawSourceRef.current = false;
+      }, 0);
+      setAoiSource("address");
+      fitMapToFeature(json.feature as Feature<Polygon | MultiPolygon>);
+      setStatus(
+        `Parcel boundary loaded (${json.parcelSummary ?? "QLD DCDB"}). Indicative only—not a surveyed title boundary. Adjust buffer if needed, then run screening.`,
+      );
+    } catch (err) {
+      setAddressError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setAddressLoading(false);
     }
   };
 
@@ -473,6 +522,38 @@ export function MapScreen() {
 
           <div className="mt-4 border-t border-bloom-brown/15 pt-4 dark:border-bloom-gold/15">
             <p className="text-xs font-semibold text-bloom-brown dark:text-bloom-gold-light">Area of interest</p>
+            <form onSubmit={onAddressParcelSearch} className="mt-3 space-y-2">
+              <label htmlFor="address-parcel" className="text-xs text-bloom-brown/80 dark:text-bloom-cream/70">
+                Queensland address → lot boundary
+              </label>
+              <input
+                id="address-parcel"
+                type="text"
+                value={addressQuery}
+                onChange={(e) => setAddressQuery(e.target.value)}
+                disabled={addressLoading}
+                autoComplete="street-address"
+                placeholder="e.g. 12 Queen St, Brisbane QLD"
+                className="w-full rounded-lg border border-bloom-brown/20 bg-white px-2 py-1.5 text-sm text-bloom-ink placeholder:text-bloom-brown/40 dark:border-bloom-gold/30 dark:bg-bloom-ink/80 dark:text-bloom-cream dark:placeholder:text-bloom-cream/35"
+              />
+              <button
+                type="submit"
+                disabled={addressLoading}
+                className="w-full rounded-lg border border-bloom-gold/50 bg-bloom-gold/20 px-3 py-2 text-sm font-semibold text-bloom-ink hover:bg-bloom-gold/35 disabled:opacity-50 dark:border-bloom-gold/40 dark:bg-bloom-gold/15 dark:text-bloom-cream dark:hover:bg-bloom-gold/25"
+              >
+                {addressLoading ? "Looking up…" : "Load property boundary"}
+              </button>
+              {addressError ? (
+                <p className="text-xs text-red-600 dark:text-red-400" role="alert">
+                  {addressError}
+                </p>
+              ) : (
+                <p className="text-xs text-bloom-brown/60 dark:text-bloom-cream/55">
+                  Geocodes the address (Australia), keeps a <strong className="font-medium text-bloom-ink dark:text-bloom-cream">Queensland</strong> hit, then loads the{" "}
+                  <strong className="font-medium text-bloom-ink dark:text-bloom-cream">DCDB parcel</strong> that contains that point. Not a legal survey—verify against title.
+                </p>
+              )}
+            </form>
             <input
               ref={fileInputRef}
               type="file"
