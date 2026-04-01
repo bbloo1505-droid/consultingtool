@@ -1,0 +1,79 @@
+/* Report-only styling (screen + print) */
+
+.report {
+  --report-bg: #fffdf8;
+  --report-surface: #ffffff;
+  --report-ink: #182230;
+  --report-muted: #667085;
+  --report-border: #d9e0e7;
+  --report-brand: #d6a523;
+  --report-brand-dark: #0f1a2b;
+  --report-success: #0f8a5f;
+  --report-warning: #c98912;
+  --report-danger: #b54708;
+}
+
+.report a {
+  color: inherit;
+}
+
+/* Hide scrollbars (keep scroll behaviour) */
+.report,
+body {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge legacy */
+}
+.report::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+.report * {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.report *::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 14mm 16mm;
+  }
+
+  html,
+  body {
+    background: white !important;
+  }
+
+  .report {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  tfoot {
+    display: table-footer-group;
+  }
+
+  tr,
+  img,
+  table,
+  pre {
+    break-inside: avoid;
+  }
+
+  .report-break-before {
+    break-before: page;
+  }
+
+  .report-avoid-break {
+    break-inside: avoid;
+  }
+}
+

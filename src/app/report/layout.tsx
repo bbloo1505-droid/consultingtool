@@ -1,10 +1,10 @@
 import type { ReactNode } from "react";
-import { AppShell } from "@/components/shell/AppShell";
+import "./report.css";
 
 export default function ReportLayout({ children }: { children: ReactNode }) {
   return (
-    <AppShell title="Report">
-      <div className="py-2">{children}</div>
-    </AppShell>
+    <div className="report min-h-screen bg-[var(--report-bg)] text-[var(--report-ink)]">
+      {children}
+    </div>
   );
 }

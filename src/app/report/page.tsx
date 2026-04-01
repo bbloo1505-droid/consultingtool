@@ -1,14 +1,20 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useEffect, useState, startTransition, useMemo } from "react";
-import Link from "next/link";
 import type { LayerScreeningResult, ScreenResponse, StoredScreeningSession } from "@/types/screening";
 import glossary from "@/data/glossary.json";
 import { layersToCsv } from "@/lib/csv-export";
 import { buildMethodsParagraph } from "@/lib/methods-blurb";
 import { parseStoredScreening, SCREENING_STORAGE_KEY } from "@/lib/screening-storage";
-import { ReportSection } from "@/components/report/ReportSection";
 import { BrandedTable, Td, Th } from "@/components/report/BrandedTable";
+import { ReportShell } from "@/components/report/ReportShell";
+import { ReportCover } from "@/components/report/ReportCover";
+import { MetadataGrid, type MetaItem } from "@/components/report/MetadataGrid";
+import { ExecutiveSummary } from "@/components/report/ExecutiveSummary";
+import { MapFigure } from "@/components/report/MapFigure";
+import { ReportSection } from "@/components/report/ReportSection";
+import { ReportStatusChip } from "@/components/report/ReportStatusChip";
 
 type GlossaryEntry = {
   title: string;
@@ -96,261 +102,128 @@ export default function ReportPage() {
     });
   }, [data, session]);
 
-  if (!data || !stats) {
-    return (
-      <div className="mx-auto max-w-3xl px-2 py-10">
-        <div className="rounded-[16px] border border-border bg-surface p-6 text-text-strong shadow-[0_10px_24px_rgba(2,6,23,0.10)]">
-          <p className="text-sm font-semibold">No screening data found</p>
-          <p className="mt-2 text-sm text-text-muted">
-            Run a screening first. The report is generated from the most recent successful run stored in this browser session.
-          </p>
-          <Link
-            className="mt-4 inline-flex h-10 items-center rounded-[14px] bg-brand-primary px-4 text-sm font-semibold text-brand-dark hover:bg-brand-primary-hover"
-            href="/"
-          >
-            Back to map
-          </Link>
-        </div>
-      </div>
-    );
-  }
+  if (!data || !stats) return null;
 
   const generated = new Date(data.generatedAt);
   const hits = stats.hits;
   const noHitLayers = data.layers.filter((l) => l.featureCount === 0 && !l.error);
   const [minLng, minLat, maxLng, maxLat] = data.debug?.bboxWgs84 ?? [0, 0, 0, 0];
   const snapshot = session?.mapSnapshotDataUrl;
+  const aoiLabel =
+    session?.aoiSource === "address"
+      ? "Parcel boundary (address lookup)"
+      : session?.aoiSource === "draw"
+        ? "Digitised polygon (map draw)"
+        : session?.aoiSource
+          ? `Boundary file (${session.aoiSource})`
+          : "AOI";
+
+  const hardHits = data.layers.filter((l) => l.featureCount > 0 && l.tier === "hard").length;
+  const triggerHits = data.layers.filter((l) => l.featureCount > 0 && l.tier === "trigger").length;
+  const watchHits = data.layers.filter((l) => l.featureCount > 0 && l.tier === "watch").length;
+  const topHitLayers = [...hits]
+    .sort((a, b) => (b.tier === a.tier ? b.featureCount - a.featureCount : tierRank(b.tier) - tierRank(a.tier)))
+    .slice(0, 5);
 
   return (
-    <article
-      className="report-doc mx-auto max-w-[210mm] rounded-[18px] bg-surface px-5 py-8 text-text-strong shadow-[0_14px_32px_rgba(2,6,23,0.16)] print:max-w-none print:rounded-none print:bg-white print:px-8 print:py-6 print:shadow-none print:text-black print:text-[11pt] print:leading-snug"
+    <ReportShell
+      onPrint={() => window.print()}
+      onCopyMethods={() => {
+        navigator.clipboard.writeText(methodsText).catch(() => {});
+      }}
+      onDownloadCsv={() => {
+        const blob = new Blob([layersToCsv(data.layers)], { type: "text/csv;charset=utf-8" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = `screening-layers-${data.generatedAt.slice(0, 10)}.csv`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+      }}
     >
-      <div className="flex flex-wrap items-center justify-between gap-4 print:hidden">
-        <div className="flex flex-wrap gap-4 text-sm font-semibold">
-          <Link className="text-text-muted underline-offset-2 hover:underline" href="/">
-            Back to map
-          </Link>
-          <Link className="text-text-muted underline-offset-2 hover:underline" href="/insights">
-            Charts
-          </Link>
-          <Link className="text-text-muted underline-offset-2 hover:underline" href="/compare">
-            Compare
-          </Link>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            className="focus-ring rounded-[14px] border border-border bg-bg-soft px-3 py-1.5 text-sm font-semibold text-text-strong hover:bg-bg-soft/80"
-            onClick={() => {
-              const blob = new Blob([layersToCsv(data.layers)], { type: "text/csv;charset=utf-8" });
-              const a = document.createElement("a");
-              a.href = URL.createObjectURL(blob);
-              a.download = `screening-layers-${data.generatedAt.slice(0, 10)}.csv`;
-              a.click();
-              URL.revokeObjectURL(a.href);
-            }}
-          >
-            Download CSV
-          </button>
-          <button
-            type="button"
-            className="focus-ring rounded-[14px] border border-border bg-bg-soft px-3 py-1.5 text-sm font-semibold text-text-strong hover:bg-bg-soft/80"
-            onClick={() => {
-              navigator.clipboard.writeText(methodsText).catch(() => {});
-            }}
-          >
-            Copy methods text
-          </button>
-          <button
-            type="button"
-            className="focus-ring rounded-[14px] border border-border bg-bg-soft px-3 py-1.5 text-sm font-semibold text-text-strong hover:bg-bg-soft/80"
-            onClick={() => window.print()}
-          >
-            Print / Save as PDF
-          </button>
-        </div>
-      </div>
+      <article className="report-doc mx-auto max-w-[210mm] print:max-w-none">
+        <ReportCover
+          title="QLD Environmental Screening Report"
+          subtitle="Preliminary desktop screening summary for Queensland spatial layers intersected against a user-defined AOI."
+          createdAtLabel={generated.toLocaleString("en-AU", { dateStyle: "long", timeStyle: "short" })}
+        />
 
-      {/* Cover-style header */}
-      <header className="mt-6 border-b border-border pb-6 print:mt-0 print:border-black print:pb-4">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div className="min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-text-muted print:text-black">
-              Bloom Foundry · Environmental Screening
-            </p>
-            <h1 className="mt-3 text-2xl font-semibold tracking-tight text-text-strong print:text-xl print:text-black">
-              Desktop screening report (indicative)
-            </h1>
-            <p className="mt-2 max-w-prose text-sm leading-relaxed text-text-muted print:text-black">
-              Queensland spatial layer screening against a user-defined area of interest (AOI). Intended for early-stage
-              constraint triage and internal decision support—verify against authoritative mapping and statutory tests.
-            </p>
-          </div>
-          <div className="w-full max-w-[260px] rounded-[14px] border border-border bg-bg-soft p-3 print:border-black print:bg-transparent">
-            <p className="text-xs font-semibold text-text-muted print:text-black">Generated</p>
-            <p className="mt-1 text-sm font-semibold">
-              {generated.toLocaleString("en-AU", { dateStyle: "long", timeStyle: "short" })}
-            </p>
-            <p className="mt-1 text-[0.7rem] text-text-muted print:text-black">Ref: {data.generatedAt}</p>
-          </div>
-        </div>
+        <MetadataGrid items={buildMetadataItems({ data, session, generated, aoiLabel })} />
 
-        <dl className="mt-6 grid gap-3 rounded-[14px] border border-border bg-bg-soft p-4 text-sm print:border-black print:bg-transparent">
-          {session?.project?.clientName ? (
-            <div className="grid grid-cols-[8rem_1fr] gap-2 print:grid-cols-[7.5rem_1fr]">
-              <dt className="font-semibold text-text-muted print:text-black">Client</dt>
-              <dd>{session.project.clientName}</dd>
-            </div>
-          ) : null}
-          {session?.project?.siteName ? (
-            <div className="grid grid-cols-[8rem_1fr] gap-2 print:grid-cols-[7.5rem_1fr]">
-              <dt className="font-semibold text-text-muted print:text-black">Site</dt>
-              <dd>{session.project.siteName}</dd>
-            </div>
-          ) : null}
-          {session?.project?.jobId ? (
-            <div className="grid grid-cols-[8rem_1fr] gap-2 print:grid-cols-[7.5rem_1fr]">
-              <dt className="font-semibold text-text-muted print:text-black">Job / file ID</dt>
-              <dd>{session.project.jobId}</dd>
-            </div>
-          ) : null}
-          {session?.project?.analyst ? (
-            <div className="grid grid-cols-[8rem_1fr] gap-2 print:grid-cols-[7.5rem_1fr]">
-              <dt className="font-semibold text-text-muted print:text-black">Analyst</dt>
-              <dd>{session.project.analyst}</dd>
-            </div>
-          ) : null}
-          {session?.project?.reportDate ? (
-            <div className="grid grid-cols-[8rem_1fr] gap-2 print:grid-cols-[7.5rem_1fr]">
-              <dt className="font-semibold text-text-muted print:text-black">Cover date</dt>
-              <dd>{session.project.reportDate}</dd>
-            </div>
-          ) : null}
-          <div className="grid grid-cols-[8rem_1fr] gap-2 print:grid-cols-[7.5rem_1fr]">
-            <dt className="font-semibold text-text-muted print:text-black">Run time</dt>
-            <dd>{generated.toLocaleString("en-AU", { dateStyle: "long", timeStyle: "short" })}</dd>
-          </div>
-          <div className="grid grid-cols-[8rem_1fr] gap-2 print:grid-cols-[7.5rem_1fr]">
-            <dt className="font-semibold text-text-muted print:text-black">Reference (ISO)</dt>
-            <dd className="font-mono text-xs">{data.generatedAt}</dd>
-          </div>
-          {data.audit ? (
+        <ExecutiveSummary
+          blurb={
             <>
-              <div className="grid grid-cols-[8rem_1fr] gap-2 print:grid-cols-[7.5rem_1fr]">
-                <dt className="font-semibold text-text-muted print:text-black">Layer pack</dt>
-                <dd>{formatLga(data.audit.lga)}</dd>
-              </div>
-              <div className="grid grid-cols-[8rem_1fr] gap-2 print:grid-cols-[7.5rem_1fr]">
-                <dt className="font-semibold text-text-muted print:text-black">Layers queried</dt>
-                <dd>{data.audit.layersQueried}</dd>
-              </div>
-              {data.audit.appVersion ? (
-                <div className="grid grid-cols-[8rem_1fr] gap-2 print:grid-cols-[7.5rem_1fr]">
-                  <dt className="font-semibold text-text-muted print:text-black">App version</dt>
-                  <dd className="font-mono text-xs">{data.audit.appVersion}</dd>
-                </div>
-              ) : null}
-              {data.audit.catalogFingerprint ? (
-                <div className="grid grid-cols-[8rem_1fr] gap-2 print:grid-cols-[7.5rem_1fr]">
-                  <dt className="font-semibold text-text-muted print:text-black">Catalog fingerprint</dt>
-                  <dd className="font-mono text-xs">{data.audit.catalogFingerprint}</dd>
+              <p>
+                This report summarises the results of an automated spatial intersection between configured Queensland map
+                layers and the nominated AOI. It is designed to support early-stage constraint triage and scoping of
+                follow-up work (e.g. ecology, planning, approvals pathways).
+              </p>
+              <p className="mt-2">
+                Results should be reviewed by a suitably qualified practitioner and verified against authoritative
+                mapping at an appropriate scale. Where Commonwealth triggers may apply, PMST remains the appropriate
+                screening tool for MNES matters.
+              </p>
+              {topHitLayers.length > 0 ? (
+                <div className="mt-3">
+                  <p className="text-sm font-semibold text-[var(--report-ink)]">Top intersecting layers</p>
+                  <ul className="mt-2 flex flex-wrap gap-2">
+                    {topHitLayers.map((l) => (
+                      <li key={l.catalogId}>
+                        <ReportStatusChip tone={l.tier === "hard" ? "danger" : l.tier === "trigger" ? "warn" : "neutral"}>
+                          {l.name} · {l.featureCount}
+                        </ReportStatusChip>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               ) : null}
             </>
-          ) : null}
-        </dl>
+          }
+          cards={[
+            { label: "Hit layers", value: stats.hitCount },
+            { label: "Feature records", value: stats.totalFeatures.toLocaleString() },
+            { label: "Run quality", value: stats.errors.length ? "Review" : "OK" },
+          ]}
+          keyFlags={buildKeyFlags({ hardHits, triggerHits, watchHits, stats })}
+        />
 
-        {snapshot ? (
-          <div className="mt-6 rounded-[14px] border border-border bg-bg-soft p-4 print:border-black print:bg-transparent print:break-inside-avoid">
-            <p className="text-xs font-semibold text-text-muted print:text-black">Map snapshot (orientation only)</p>
-            <p className="mt-1 text-xs text-text-muted print:text-black">
-              Captured from the map workspace at the time of screening. Not a cadastral or surveyed boundary.
-            </p>
-            {/* eslint-disable-next-line @next/next/no-img-element -- data URL snapshot, print-friendly */}
-            <img
-              src={snapshot}
-              alt="Map snapshot"
-              className="mt-3 w-full rounded-[12px] border border-border print:border-black"
-            />
-          </div>
-        ) : null}
-      </header>
+        <MapFigure
+          dataUrl={snapshot}
+          caption="Orientation figure showing the AOI used for the screening run."
+          meta={
+            <span>
+              AOI: {aoiLabel} · Buffer: {session?.bufferMeters ?? 0} m
+            </span>
+          }
+        />
 
-      <ReportSection
-        title="Summary"
-        subtitle="High-level outcomes and quality notes for the current AOI and layer pack."
-      >
-        <div className="grid gap-3 sm:grid-cols-3 print:grid-cols-3">
-          <div className="rounded-[14px] border border-border bg-bg-soft p-4 print:border-black print:bg-transparent">
-            <p className="text-xs font-semibold text-text-muted print:text-black">Hit layers</p>
-            <p className="mt-2 text-2xl font-semibold tracking-tight">{stats.hitCount}</p>
+        <ReportSection
+          title="Screening summary"
+          subtitle="Grouped outcomes aligned to the PMST-style report rhythm."
+        >
+          <div className="grid gap-3 sm:grid-cols-2 print:grid-cols-2">
+            <SummaryRow label="Summary" value={`${stats.hitCount} hit layer(s), ${stats.totalFeatures.toLocaleString()} feature record(s)`} tone="brand" />
+            <SummaryRow label="Details" value={`${hardHits} hard · ${triggerHits} trigger · ${watchHits} watch`} tone="neutral" />
+            <SummaryRow label="MNES (Commonwealth)" value="Not spatially queried in this tool (use PMST)" tone="warn" />
+            <SummaryRow label="Other EPBC matters" value="Not spatially queried in this tool (use PMST)" tone="neutral" />
+            <SummaryRow label="Extra information" value={`${data.registerHints?.length ?? 0} workflow / register link(s)`} tone="neutral" />
+            <SummaryRow label="Caveat" value="Preliminary desktop screening output — verify and apply professional judgement" tone="danger" />
           </div>
-          <div className="rounded-[14px] border border-border bg-bg-soft p-4 print:border-black print:bg-transparent">
-            <p className="text-xs font-semibold text-text-muted print:text-black">Total feature records</p>
-            <p className="mt-2 text-2xl font-semibold tracking-tight">{stats.totalFeatures.toLocaleString()}</p>
-          </div>
-          <div className="rounded-[14px] border border-border bg-bg-soft p-4 print:border-black print:bg-transparent">
-            <p className="text-xs font-semibold text-text-muted print:text-black">Run quality</p>
-            <p className="mt-2 text-2xl font-semibold tracking-tight">{stats.errors.length ? "Review" : "OK"}</p>
-          </div>
-        </div>
-        <div className="mt-5 space-y-3 text-sm leading-relaxed text-text-strong print:text-black">
-          <p>
-            A desktop spatial screening was performed by intersecting publicly available Queensland (and selected
-            related) map layers with a user-defined polygon representing the area of interest (AOI)—drawn on the map or
-            uploaded as GeoJSON, optionally buffered before querying. The objective is to flag{" "}
-            <strong>potential</strong> overlap with mapped Matters of State Environmental Significance (MSES) and allied
-            constraints to inform whether detailed ecology, planning, or approvals pathways may warrant consideration.
-          </p>
-          <p>
-            <strong>Key outcome:</strong> {stats.hitCount} layer{stats.hitCount === 1 ? "" : "s"} returned at least one
-            intersecting feature ({stats.totalFeatures.toLocaleString()} feature record
-            {stats.totalFeatures === 1 ? "" : "s"} in total across those layers).{" "}
-            {stats.hitCount === 0
-              ? "No mapped intersections were returned under the current layer configuration; this does not demonstrate absence of environmental values on the ground."
-              : "Presence of an intersection does not, by itself, establish an impact or approval requirement; it indicates mapped data coincident with the AOI."}
-          </p>
-          {stats.errors.length > 0 ? (
+        </ReportSection>
+
+        <ReportSection title="Details" subtitle="Scope and intended use (what this report is and is not).">
+          <div className="rounded-[16px] border border-[var(--report-border)] bg-[var(--report-surface)] p-6 text-sm leading-relaxed text-[var(--report-ink)] print:rounded-none print:border-black print:p-0">
             <p>
-              <strong>Data quality note:</strong> {stats.errors.length} layer query
-              {stats.errors.length === 1 ? "" : "ies"} returned an error (see Section 4). Results for those layers should
-              not be relied upon until the service responds successfully.
+              This report is an <strong>indicative, non-statutory</strong> screening output. It does not constitute an environmental impact
+              assessment, an EPBC Act referral recommendation, a clearing approval, an offset calculation, or planning scheme advice.
             </p>
-          ) : null}
-          {stats.capped.length > 0 ? (
-            <p>
-              <strong>Transfer limit:</strong> One or more layers may have truncated feature lists at the server
-              maximum. Narrow the AOI or obtain a direct data extract if a complete attribute list is required.
+            <p className="mt-3">
+              Results are derived from configured map services and reflect the data currency, scale, and completeness available at the time of
+              query. Intersections may indicate mapped data coincident with the AOI but do not establish an impact or approval requirement.
             </p>
-          ) : null}
-        </div>
-      </ReportSection>
+          </div>
+        </ReportSection>
 
-      <ReportSection
-        title="Details"
-        subtitle="Scope, intended use, and important limitations for interpretation."
-      >
-        <div className="space-y-3 text-sm leading-relaxed text-text-strong print:text-black">
-          <p>
-            This report is an <strong>indicative, non-statutory</strong> screening output. It does not constitute an
-            environmental impact assessment, an EPBC Act referral recommendation, a clearing approval, a biodiversity
-            offset calculation, or planning scheme advice.
-          </p>
-          <p>
-            <strong>MSES (Queensland)</strong> matters are approximated using published government map services
-            intersected with the AOI. <strong>MNES (Commonwealth)</strong> matters under the EPBC Act (e.g. threatened
-            species, threatened ecological communities) are <strong>not</strong> automatically assessed in this tool; the
-            Protected Matters Search Tool (PMST) and project-specific advice remain the appropriate tests where
-            Commonwealth triggers may apply.
-          </p>
-          <p>
-            The user-drawn AOI is not a surveyed boundary. Where legal lot boundaries, easements, or design footprints
-            differ from the AOI, conclusions may not hold.
-          </p>
-        </div>
-      </ReportSection>
-
-      <ReportSection title="Methodology" subtitle="How the AOI was prepared and how layers were queried.">
+        <ReportSection title="Methodology" subtitle="AOI preparation and layer query method.">
         <ol className="list-decimal space-y-2 pl-5 text-sm leading-relaxed text-text-strong print:text-black">
           <li>
             The AOI was{" "}
@@ -400,9 +273,9 @@ export default function ReportPage() {
             </p>
           </div>
         ) : null}
-      </ReportSection>
+        </ReportSection>
 
-      <ReportSection title="Study area reference" subtitle="Orientation metadata stored for this run.">
+        <ReportSection title="Study area reference" subtitle="Orientation metadata stored for this run.">
         <div className="space-y-2 text-sm text-text-strong print:text-black">
           {data.cadastre ? (
             <>
@@ -419,13 +292,13 @@ export default function ReportPage() {
             <p>No centroid metadata was stored for this run.</p>
           )}
         </div>
-      </ReportSection>
+        </ReportSection>
 
       {/* Results table - all layers */}
-      <ReportSection
-        title="Spatial intersection results"
-        subtitle="Every configured layer interrogated for the current AOI. Counts reflect the service response for an intersects query."
-      >
+        <ReportSection
+          title="State / Queensland screening layers"
+          subtitle="Spatial intersection results for configured Queensland layers."
+        >
         <div className="mt-2">
           <BrandedTable
             columns={
@@ -483,13 +356,13 @@ export default function ReportPage() {
             </ul>
           </>
         ) : null}
-      </ReportSection>
+        </ReportSection>
 
       {/* Further assessment */}
-      <ReportSection
-        title="Matters of National Environmental Significance (MNES)"
-        subtitle="Workflow prompts for Commonwealth screening (not spatially queried by this tool)."
-      >
+        <ReportSection
+          title="Matters of National Environmental Significance (MNES)"
+          subtitle="Commonwealth matters are not spatially queried in this tool. Use PMST and statutory workflows."
+        >
         <div className="space-y-3 text-sm leading-relaxed text-text-strong print:text-black">
           <p>
             Where development may affect matters of national environmental significance, proponents typically use the
@@ -522,48 +395,188 @@ export default function ReportPage() {
           </div>
         ) : null}
 
-        {data.registerHints && data.registerHints.length > 0 ? (
-          <ol className="mt-6 list-decimal space-y-3 pl-5 text-sm text-text-strong print:text-black">
-            {data.registerHints.map((h) => (
-              <li key={h.id}>
-                <span className="font-semibold">{h.title}</span> - {h.description}{" "}
-                <span className="break-all text-xs text-text-muted">({h.url})</span>
+        </ReportSection>
+
+        <ReportSection
+          title="Other matters protected by the EPBC Act"
+          subtitle="This tool does not spatially query EPBC “other matters”. Use PMST and agency guidance."
+        >
+          <div className="rounded-[16px] border border-[var(--report-border)] bg-[var(--report-surface)] p-6 text-sm text-[var(--report-muted)] print:rounded-none print:border-black print:p-0">
+            <p>
+              If actions may affect the environment on Commonwealth land or Commonwealth areas, additional approval pathways may apply.
+              Use PMST outputs and project-specific advice for Commonwealth matters.
+            </p>
+          </div>
+        </ReportSection>
+
+        <ReportSection title="Extra information" subtitle="Non-spatial workflow links and registers to support due diligence.">
+          {data.registerHints && data.registerHints.length > 0 ? (
+            <ol className="mt-2 list-decimal space-y-3 pl-5 text-sm text-[var(--report-ink)] print:text-black">
+              {data.registerHints.map((h) => (
+                <li key={h.id}>
+                  <span className="font-semibold">{h.title}</span> - {h.description}{" "}
+                  <span className="break-all text-xs text-[var(--report-muted)]">({h.url})</span>
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <p className="text-sm text-[var(--report-muted)]">No extra information was returned for this run.</p>
+          )}
+        </ReportSection>
+
+        <ReportSection title="Caveat / limitations" subtitle="Interpretation guidance for a preliminary desktop screening output.">
+          <div className="rounded-[16px] border border-[var(--report-border)] bg-[var(--report-surface)] p-6 text-sm leading-relaxed text-[var(--report-ink)] print:rounded-none print:border-black print:p-0">
+            <ul className="list-inside list-disc space-y-2 text-[var(--report-ink)]">
+              <li>
+                This report is a preliminary desktop screening output and does not replace field verification, survey, or statutory assessment.
               </li>
-            ))}
-          </ol>
-        ) : null}
-      </ReportSection>
+              <li>
+                The AOI is not a surveyed cadastral or legal boundary unless sourced from authoritative cadastral/survey data.
+              </li>
+              <li>
+                Results depend on the currency, scale, positional accuracy, and completeness of third-party datasets and services at the time of query.
+              </li>
+              <li>
+                Some layers represent potential presence/likelihood indicators rather than confirmed on-ground occurrence.
+              </li>
+              <li>
+                Automated intersection outputs should be reviewed by a suitably qualified professional before being relied on for project decisions.
+              </li>
+            </ul>
+          </div>
+        </ReportSection>
 
-      {/* Disclaimer */}
-      <section className="report-section mt-10 border-t border-border pt-6 text-xs leading-relaxed text-text-muted print:border-black print:text-[9pt] print:text-black">
-        <h2 className="text-base font-semibold text-text-strong print:text-black">Limitations and disclaimer</h2>
-        <ul className="mt-3 list-inside list-disc space-y-2">
-          <li>
-            Mapped data are sourced from third-party services; currency, scale, positional accuracy, and completeness
-            are not warranted by this tool.
-          </li>
-          <li>
-            Aboriginal and Torres Strait Islander cultural heritage is not fully captured in spatial databases; a duty
-            of care applies irrespective of this report.
-          </li>
-          <li>
-            Local planning scheme overlays, infrastructure charges, bushfire construction requirements, and other
-            non-catalogued constraints may still apply.
-          </li>
-          <li>
-            This report is prepared by automated intersection only. It must be reviewed by a suitably qualified
-            environmental practitioner before reliance in a statutory or commercial context.
-          </li>
-        </ul>
-      </section>
+        <ReportSection title="Acknowledgements / data sources" subtitle="How this report is compiled.">
+          <div className="rounded-[16px] border border-[var(--report-border)] bg-[var(--report-surface)] p-6 text-sm leading-relaxed text-[var(--report-muted)] print:rounded-none print:border-black print:p-0">
+            <p>
+              Results are compiled from configured Queensland map services and supporting workflow references used by the Bloom Foundry Environmental Screening platform.
+              Layer attribution is recorded per layer in the results section. Report generated at{" "}
+              <span className="font-mono text-xs text-[var(--report-ink)]">{data.generatedAt}</span>.
+            </p>
+          </div>
+        </ReportSection>
 
-      <footer className="report-section mt-8 border-t border-border pt-4 text-center text-[0.65rem] text-text-muted print:border-black print:text-black">
-        Generated by Bloom Foundry Environmental Screening
-        {data.audit?.appVersion ? ` · v${data.audit.appVersion}` : ""}
-        {data.audit?.catalogFingerprint ? ` · ${data.audit.catalogFingerprint}` : ""}. Not for statutory notification unless
-        endorsed.
-      </footer>
-    </article>
+        <footer className="mt-8 border-t border-[var(--report-border)] pt-4 text-center text-[0.7rem] text-[var(--report-muted)] print:border-black">
+          Bloom Foundry · QLD Environmental Screening
+          {data.audit?.appVersion ? ` · v${data.audit.appVersion}` : ""}
+          {data.audit?.catalogFingerprint ? ` · ${data.audit.catalogFingerprint}` : ""} · Generated {generated.toLocaleString("en-AU")}
+        </footer>
+      </article>
+    </ReportShell>
+  );
+}
+
+function tierRank(tier: string): number {
+  switch (tier) {
+    case "hard":
+      return 3;
+    case "trigger":
+      return 2;
+    case "watch":
+      return 1;
+    default:
+      return 0;
+  }
+}
+
+function buildMetadataItems({
+  data,
+  session,
+  generated,
+  aoiLabel,
+}: {
+  data: ScreenResponse;
+  session: StoredScreeningSession | null;
+  generated: Date;
+  aoiLabel: string;
+}): MetaItem[] {
+  const p = session?.project;
+  return [
+    { label: "Client", value: p?.clientName ?? "" },
+    { label: "Project / site", value: p?.siteName ?? "" },
+    { label: "Job / file ID", value: p?.jobId ?? "" },
+    { label: "Analyst", value: p?.analyst ?? "" },
+    { label: "Report date", value: p?.reportDate ?? "" },
+    { label: "AOI description", value: aoiLabel },
+    { label: "Buffer distance", value: `${session?.bufferMeters ?? 0} m` },
+    { label: "Study area pack", value: data.audit?.lga ?? "" },
+    { label: "Layers queried", value: data.audit?.layersQueried ?? "" },
+    { label: "Screening timestamp", value: generated.toLocaleString("en-AU", { dateStyle: "long", timeStyle: "short" }) },
+  ];
+}
+
+function buildKeyFlags({
+  hardHits,
+  triggerHits,
+  watchHits,
+  stats,
+}: {
+  hardHits: number;
+  triggerHits: number;
+  watchHits: number;
+  stats: { errors: LayerScreeningResult[]; capped: LayerScreeningResult[] };
+}): { title: string; body: ReactNode; tone?: "brand" | "good" | "warn" | "danger" | "neutral" }[] {
+  const flags: { title: string; body: ReactNode; tone?: "brand" | "good" | "warn" | "danger" | "neutral" }[] = [];
+
+  if (hardHits > 0) {
+    flags.push({
+      title: "Hard constraints intersected",
+      body: `${hardHits} hard-tier layer(s) returned intersecting features. Treat as high-priority for verification and interpretation.`,
+      tone: "danger",
+    });
+  }
+  if (triggerHits > 0) {
+    flags.push({
+      title: "Assessment attention triggers",
+      body: `${triggerHits} trigger-tier layer(s) intersected. Review in Queensland Globe and align with statutory tests.`,
+      tone: "warn",
+    });
+  }
+  if (watchHits > 0 && (hardHits + triggerHits) === 0) {
+    flags.push({
+      title: "Contextual overlays only",
+      body: `${watchHits} watch-tier layer(s) intersected. These are typically contextual; confirm relevance to project scope.`,
+      tone: "neutral",
+    });
+  }
+  if (stats.errors.length > 0) {
+    flags.push({
+      title: "Layer query errors",
+      body: `${stats.errors.length} layer(s) returned an error and should not be relied upon until a successful re-run.`,
+      tone: "warn",
+    });
+  }
+  if (stats.capped.length > 0) {
+    flags.push({
+      title: "Transfer limit / partial results",
+      body: `${stats.capped.length} layer(s) may have truncated feature lists at the server maximum. Narrow AOI or obtain a direct extract if needed.`,
+      tone: "warn",
+    });
+  }
+  return flags;
+}
+
+function SummaryRow({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: string;
+  tone: "neutral" | "brand" | "warn" | "danger";
+}) {
+  return (
+    <div className="rounded-[14px] border border-[var(--report-border)] bg-[var(--report-surface)] p-4 print:border-black print:bg-transparent">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-xs font-semibold text-[var(--report-muted)]">{label}</p>
+          <p className="mt-1 text-sm font-semibold text-[var(--report-ink)]">{value}</p>
+        </div>
+        <ReportStatusChip tone={tone === "brand" ? "brand" : tone === "warn" ? "warn" : tone === "danger" ? "danger" : "neutral"}>
+          {tone === "brand" ? "Summary" : tone === "warn" ? "Advisory" : tone === "danger" ? "Caveat" : "Info"}
+        </ReportStatusChip>
+      </div>
+    </div>
   );
 }
 
