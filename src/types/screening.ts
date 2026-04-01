@@ -3,7 +3,24 @@ import type { Feature, Polygon, MultiPolygon } from "geojson";
 export type ConstraintTier = "hard" | "trigger" | "watch";
 export type DataMode = "spatial" | "register" | "manual";
 
-export type LgaId = "qld" | "brisbane" | "gold_coast" | "sunshine_coast" | "cairns";
+export type LgaId =
+  | "qld"
+  | "qld_offset"
+  | "brisbane"
+  | "gold_coast"
+  | "sunshine_coast"
+  | "cairns";
+
+export type ScreeningMode = "standard" | "offset";
+
+export type OffsetMatterType =
+  | "regional_ecosystem"
+  | "wetland"
+  | "connectivity"
+  | "threatened_species_habitat"
+  | "koala"
+  | "protected_area_related"
+  | "manual_review_required";
 
 export type CatalogLayer = {
   id: string;
@@ -81,6 +98,10 @@ export type StoredScreeningSession = {
   bufferMeters?: number;
   /** draw | generic upload | specific format from boundary file parser */
   aoiSource?: "draw" | "upload" | "geojson" | "kml" | "kmz" | "shapefile" | "address";
+  /** Mode selection is client-side only (does not change API payload). */
+  mode?: ScreeningMode;
+  /** Offset mode only: assumed/selected impacted matter type for rule checks. */
+  offsetMatterType?: OffsetMatterType;
   /**
    * Optional client-captured map snapshot (data URL) for report presentation.
    * Stored client-side only; not part of the API payload.

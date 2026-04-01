@@ -7,7 +7,7 @@ import glossary from "@/data/glossary.json";
 import { layersToCsv } from "@/lib/csv-export";
 import { buildMethodsParagraph } from "@/lib/methods-blurb";
 import { parseStoredScreening, SCREENING_STORAGE_KEY } from "@/lib/screening-storage";
-import { BrandedTable, Td, Th } from "@/components/report/BrandedTable";
+import { BrandedTable, Td, TdX, Th } from "@/components/report/BrandedTable";
 import { ReportShell } from "@/components/report/ReportShell";
 import { ReportCover } from "@/components/report/ReportCover";
 import { MetadataGrid, type MetaItem } from "@/components/report/MetadataGrid";
@@ -15,6 +15,9 @@ import { ExecutiveSummary } from "@/components/report/ExecutiveSummary";
 import { MapFigure } from "@/components/report/MapFigure";
 import { ReportSection } from "@/components/report/ReportSection";
 import { ReportStatusChip } from "@/components/report/ReportStatusChip";
+import { auditOffsetCoverage } from "@/lib/offset/coverage";
+import { groupOffsetLayers } from "@/lib/offset/groups";
+import { evaluateOffsetSuitability, matterLabel } from "@/lib/offset/rules";
 
 type GlossaryEntry = {
   title: string;
@@ -125,6 +128,20 @@ export default function ReportPage() {
     .sort((a, b) => (b.tier === a.tier ? b.featureCount - a.featureCount : tierRank(b.tier) - tierRank(a.tier)))
     .slice(0, 5);
 
+  const isOffset = session?.mode === "offset";
+  const offsetGrouped = isOffset ? groupOffsetLayers(data.layers) : null;
+  const offsetFatal = offsetGrouped
+    ? offsetGrouped.filter((g) => g.severity === "fatal" && g.layer.featureCount > 0 && !g.layer.error).length
+    : 0;
+  const offsetRisks = offsetGrouped
+    ? offsetGrouped.filter((g) => g.severity === "risk" && g.layer.featureCount > 0 && !g.layer.error).length
+    : 0;
+  const offsetMatter = session?.offsetMatterType ?? "manual_review_required";
+  const offsetSuitability = offsetGrouped ? evaluateOffsetSuitability(offsetGrouped, offsetMatter) : null;
+  const offsetCoverage = isOffset
+    ? auditOffsetCoverage(data.layers.map((l) => ({ glossaryKey: l.glossaryKey, domain: l.domain })))
+    : null;
+
   return (
     <ReportShell
       onPrint={() => window.print()}
@@ -142,8 +159,12 @@ export default function ReportPage() {
     >
       <article className="report-doc mx-auto max-w-[210mm] print:max-w-none">
         <ReportCover
-          title="QLD Environmental Screening Report"
-          subtitle="Preliminary desktop screening summary for Queensland spatial layers intersected against a user-defined AOI."
+          title={isOffset ? "Offset Site Desktop Review (QLD)" : "QLD Environmental Screening Report"}
+          subtitle={
+            isOffset
+              ? "Preliminary desktop review for a proposed offset site: constraints, suitability indicators, legal-security risks, and delivery considerations."
+              : "Preliminary desktop screening summary for Queensland spatial layers intersected against a user-defined AOI."
+          }
           createdAtLabel={generated.toLocaleString("en-AU", { dateStyle: "long", timeStyle: "short" })}
         />
 
@@ -152,16 +173,32 @@ export default function ReportPage() {
         <ExecutiveSummary
           blurb={
             <>
-              <p>
-                This report summarises the results of an automated spatial intersection between configured Queensland map
-                layers and the nominated AOI. It is designed to support early-stage constraint triage and scoping of
-                follow-up work (e.g. ecology, planning, approvals pathways).
-              </p>
-              <p className="mt-2">
-                Results should be reviewed by a suitably qualified practitioner and verified against authoritative
-                mapping at an appropriate scale. Where Commonwealth triggers may apply, PMST remains the appropriate
-                screening tool for MNES matters.
-              </p>
+              {isOffset ? (
+                <>
+                  <p>
+                    This report is a preliminary desktop review for a proposed <strong>offset site</strong>. It screens
+                    configured Queensland layers for statutory constraints, legal-security conflicts, delivery risks and
+                    desktop indicators of matter presence/capability, and it highlights where specialist review is still required.
+                  </p>
+                  <p className="mt-2">
+                    The suitability rating is conservative and <strong>does not</strong> replace Queensland offsets policy tests,
+                    local planning overlays, tenure searches, or field verification. Commonwealth MNES matters require PMST.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p>
+                    This report summarises the results of an automated spatial intersection between configured Queensland map
+                    layers and the nominated AOI. It is designed to support early-stage constraint triage and scoping of
+                    follow-up work (e.g. ecology, planning, approvals pathways).
+                  </p>
+                  <p className="mt-2">
+                    Results should be reviewed by a suitably qualified practitioner and verified against authoritative
+                    mapping at an appropriate scale. Where Commonwealth triggers may apply, PMST remains the appropriate
+                    screening tool for MNES matters.
+                  </p>
+                </>
+              )}
               {topHitLayers.length > 0 ? (
                 <div className="mt-3">
                   <p className="text-sm font-semibold text-[var(--report-ink)]">Top intersecting layers</p>
@@ -178,12 +215,46 @@ export default function ReportPage() {
               ) : null}
             </>
           }
-          cards={[
-            { label: "Hit layers", value: stats.hitCount },
-            { label: "Feature records", value: stats.totalFeatures.toLocaleString() },
-            { label: "Run quality", value: stats.errors.length ? "Review" : "OK" },
-          ]}
-          keyFlags={buildKeyFlags({ hardHits, triggerHits, watchHits, stats })}
+          cards={
+            isOffset
+              ? [
+                  { label: "Suitability rating", value: offsetSuitability?.rating ?? "—" },
+                  { label: "Fatal flaws", value: offsetFatal },
+                  { label: "Key constraints", value: offsetRisks },
+                ]
+              : [
+                  { label: "Hit layers", value: stats.hitCount },
+                  { label: "Feature records", value: stats.totalFeatures.toLocaleString() },
+                  { label: "Run quality", value: stats.errors.length ? "Review" : "OK" },
+                ]
+          }
+          keyFlags={
+            (isOffset
+              ? ([
+                  ...(offsetSuitability?.checks ?? []).slice(0, 3).map((c) => ({
+                    title: c.label,
+                    body: c.rationale,
+                    tone: (c.outcome === "fail" ? "danger" : c.outcome === "partial" ? "warn" : "neutral") as
+                      | "danger"
+                      | "warn"
+                      | "neutral",
+                  })),
+                  ...(offsetCoverage?.missing?.length
+                    ? ([
+                        {
+                          title: "Coverage gaps (manual checks required)",
+                          body: `Missing families: ${offsetCoverage.missing.join(", ")}.`,
+                          tone: "warn" as const,
+                        },
+                      ] as const)
+                    : []),
+                ] as {
+                  title: string;
+                  body: ReactNode;
+                  tone?: "brand" | "good" | "warn" | "danger" | "neutral";
+                }[])
+              : buildKeyFlags({ hardHits, triggerHits, watchHits, stats }))
+          }
         />
 
         <MapFigure
@@ -209,6 +280,118 @@ export default function ReportPage() {
             <SummaryRow label="Caveat" value="Preliminary desktop screening output — verify and apply professional judgement" tone="danger" />
           </div>
         </ReportSection>
+
+        {isOffset && offsetGrouped && offsetSuitability ? (
+          <>
+            <ReportSection
+              title="Offset suitability summary"
+              subtitle="Desktop rule checks and assumptions used to frame suitability for the offset site."
+            >
+              <div className="rounded-[16px] border border-[var(--report-border)] bg-[var(--report-surface)] p-6 text-sm print:rounded-none print:border-black print:p-0">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div>
+                    <p className="text-xs font-semibold text-[var(--report-muted)]">Impacted matter type (assumed)</p>
+                    <p className="mt-1 font-semibold text-[var(--report-ink)]">{matterLabel(offsetMatter)}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs font-semibold text-[var(--report-muted)]">Overall rating</p>
+                    <p className="mt-1 text-base font-semibold text-[var(--report-ink)]">{offsetSuitability.rating}</p>
+                  </div>
+                </div>
+                <div className="mt-4 grid gap-3 sm:grid-cols-2 print:grid-cols-2">
+                  {offsetSuitability.checks.map((c) => (
+                    <div key={c.id} className="rounded-[14px] border border-[var(--report-border)] bg-[var(--report-bg)] p-4 print:bg-transparent">
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="text-sm font-semibold text-[var(--report-ink)]">{c.label}</p>
+                        <ReportStatusChip tone={c.outcome === "fail" ? "danger" : c.outcome === "partial" ? "warn" : c.outcome === "pass" ? "good" : "neutral"}>
+                          {c.outcome.toUpperCase()}
+                        </ReportStatusChip>
+                      </div>
+                      <p className="mt-2 text-sm text-[var(--report-muted)]">{c.rationale}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </ReportSection>
+
+            <ReportSection
+              title="Coverage audit"
+              subtitle="Enabled constraint families vs missing families that still require manual checks."
+            >
+              <div className="grid gap-4 sm:grid-cols-2 print:grid-cols-2">
+                <div className="rounded-[16px] border border-[var(--report-border)] bg-[var(--report-surface)] p-6 print:rounded-none print:border-black print:p-0">
+                  <p className="text-sm font-semibold text-[var(--report-ink)]">Enabled families</p>
+                  <ul className="mt-3 space-y-2 text-sm text-[var(--report-ink)]">
+                    {(offsetCoverage?.enabled ?? []).map((f) => (
+                      <li key={f} className="flex items-start gap-2">
+                        <span className="mt-1 h-2 w-2 rounded-full bg-[var(--report-success)]" />
+                        <span className="min-w-0">{f}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="rounded-[16px] border border-[var(--report-border)] bg-[var(--report-surface)] p-6 print:rounded-none print:border-black print:p-0">
+                  <p className="text-sm font-semibold text-[var(--report-ink)]">Missing / manual checks</p>
+                  <ul className="mt-3 space-y-2 text-sm text-[var(--report-ink)]">
+                    {(offsetCoverage?.missing ?? []).map((f) => (
+                      <li key={f} className="flex items-start gap-2">
+                        <span className="mt-1 h-2 w-2 rounded-full bg-[var(--report-warning)]" />
+                        <span className="min-w-0">{f}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="mt-4 text-xs text-[var(--report-muted)]">
+                    This tool does not fully automate council overlays or authoritative tenure/encumbrance checks.
+                  </p>
+                </div>
+              </div>
+            </ReportSection>
+
+            <ReportSection
+              title="Constraint register"
+              subtitle="A structured register of constraints, severity, and recommended follow-up for an offset site."
+            >
+              <BrandedTable
+                columns={
+                  <>
+                    <Th>Family</Th>
+                    <Th>Layer</Th>
+                    <Th>Result</Th>
+                    <Th>Severity</Th>
+                    <Th>Why it matters</Th>
+                    <Th>Follow-up</Th>
+                  </>
+                }
+              >
+                {offsetGrouped.map((g) => {
+                  const hit = g.layer.featureCount > 0 && !g.layer.error;
+                  const severity =
+                    g.severity === "fatal"
+                      ? "Fatal"
+                      : g.severity === "positive"
+                        ? "Positive"
+                        : g.severity === "risk"
+                          ? "Review"
+                          : "Info";
+                  return (
+                    <tr key={g.layer.catalogId} className="align-top">
+                      <Td>{g.group}</Td>
+                      <Td>{g.layer.name}</Td>
+                      <TdX className="tabular-nums">{g.layer.error ? `Error` : hit ? `${g.layer.featureCount}` : "0"}</TdX>
+                      <Td>
+                        <ReportStatusChip tone={g.severity === "fatal" ? "danger" : g.severity === "risk" ? "warn" : g.severity === "positive" ? "good" : "neutral"}>
+                          {severity}
+                        </ReportStatusChip>
+                      </Td>
+                      <Td>{g.whyItMatters}</Td>
+                      <Td>{g.followUp}</Td>
+                    </tr>
+                  );
+                })}
+              </BrandedTable>
+            </ReportSection>
+          </>
+        ) : null}
 
         <ReportSection title="Details" subtitle="Scope and intended use (what this report is and is not).">
           <div className="rounded-[16px] border border-[var(--report-border)] bg-[var(--report-surface)] p-6 text-sm leading-relaxed text-[var(--report-ink)] print:rounded-none print:border-black print:p-0">
@@ -499,7 +682,7 @@ function buildMetadataItems({
     { label: "Report date", value: p?.reportDate ?? "" },
     { label: "AOI description", value: aoiLabel },
     { label: "Buffer distance", value: `${session?.bufferMeters ?? 0} m` },
-    { label: "Study area pack", value: data.audit?.lga ?? "" },
+    { label: "Study area pack", value: data.audit?.lga ? formatLga(data.audit.lga) : "" },
     { label: "Layers queried", value: data.audit?.layersQueried ?? "" },
     { label: "Screening timestamp", value: generated.toLocaleString("en-AU", { dateStyle: "long", timeStyle: "short" }) },
   ];

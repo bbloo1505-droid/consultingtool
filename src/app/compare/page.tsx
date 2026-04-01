@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, startTransition } from "react";
 import Link from "next/link";
 import type { LayerScreeningResult, StoredScreeningSession } from "@/types/screening";
 import { parseStoredScreening, SNAPSHOT_A_KEY, SNAPSHOT_B_KEY } from "@/lib/screening-storage";
+import { AppShell } from "@/components/shell/AppShell";
 
 function hitSummary(layers: LayerScreeningResult[]) {
   const hits = layers.filter((l) => l.featureCount > 0 && !l.error);
@@ -49,85 +50,88 @@ export default function ComparePage() {
   const sumB = screenB ? hitSummary(screenB.layers) : null;
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10 text-bloom-ink dark:text-bloom-cream">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="font-display text-2xl font-semibold">Compare screening runs</h1>
-        <div className="flex flex-wrap gap-4 text-sm font-semibold">
-          <Link href="/" className="text-bloom-brown underline dark:text-bloom-gold-light">
-            Map
-          </Link>
-          <Link href="/report" className="text-bloom-brown underline dark:text-bloom-gold-light">
-            Report
-          </Link>
-        </div>
-      </div>
-      <p className="mt-3 max-w-prose text-sm text-bloom-brown/90 dark:text-bloom-cream/80">
-        Save two runs from the map as <strong>snapshot A</strong> and <strong>snapshot B</strong>, then compare layer hits
-        side by side. Snapshots are stored in this browser only.
-      </p>
-
-      {!screenA && !screenB ? (
-        <p className="mt-8 text-sm text-bloom-brown/85 dark:text-bloom-cream/75">
-          No snapshots found. Run a screening, click &quot;Save snapshot A&quot; and &quot;Save snapshot B&quot; for two scenarios, then
-          return here.
-        </p>
-      ) : (
-        <div className="mt-8 space-y-8">
-          <div className="grid gap-6 md:grid-cols-2">
-            <div className="rounded-xl border border-bloom-brown/20 bg-white p-4 dark:border-bloom-gold/25 dark:bg-bloom-ink/50">
-              <h2 className="font-display text-lg font-semibold">Snapshot A</h2>
-              {screenA && sessionA ? (
-                <SnapshotMeta session={sessionA} screen={screenA} summary={sumA!} />
-              ) : (
-                <p className="mt-2 text-sm text-bloom-brown/70">Empty — save from the map.</p>
-              )}
-            </div>
-            <div className="rounded-xl border border-bloom-brown/20 bg-white p-4 dark:border-bloom-gold/25 dark:bg-bloom-ink/50">
-              <h2 className="font-display text-lg font-semibold">Snapshot B</h2>
-              {screenB && sessionB ? (
-                <SnapshotMeta session={sessionB} screen={screenB} summary={sumB!} />
-              ) : (
-                <p className="mt-2 text-sm text-bloom-brown/70">Empty — save from the map.</p>
-              )}
-            </div>
+    <AppShell title="Compare">
+      <div className="rounded-[18px] border border-border bg-surface p-6 text-text-strong shadow-[0_14px_32px_rgba(2,6,23,0.16)]">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="min-w-0">
+            <h1 className="text-xl font-semibold tracking-tight text-text-strong">Compare screening runs</h1>
+            <p className="mt-1 max-w-prose text-sm text-text-muted">
+              Save two runs as <strong>snapshot A</strong> and <strong>snapshot B</strong>, then compare layer hits side by side.
+              Snapshots are stored in this browser only.
+            </p>
           </div>
-
-          {screenA && screenB && allIds.length > 0 ? (
-            <div className="overflow-x-auto rounded-xl border border-bloom-brown/20 dark:border-bloom-gold/25">
-              <table className="w-full min-w-[640px] border-collapse text-left text-sm">
-                <thead>
-                  <tr className="border-b border-bloom-brown/20 bg-bloom-cream/50 dark:border-bloom-gold/20 dark:bg-bloom-brown/30">
-                    <th className="px-3 py-2 font-semibold">Layer</th>
-                    <th className="px-3 py-2 font-semibold">A — count</th>
-                    <th className="px-3 py-2 font-semibold">B — count</th>
-                    <th className="px-3 py-2 font-semibold">Δ</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {allIds.map((id) => {
-                    const la = byIdA.get(id);
-                    const lb = byIdB.get(id);
-                    const ca = la?.featureCount ?? 0;
-                    const cb = lb?.featureCount ?? 0;
-                    const name = la?.name ?? lb?.name ?? id;
-                    return (
-                      <tr key={id} className="border-b border-bloom-brown/10 dark:border-bloom-gold/15">
-                        <td className="px-3 py-2 text-bloom-brown/95 dark:text-bloom-cream/85">{name}</td>
-                        <td className="px-3 py-2 tabular-nums">{ca}{la?.error ? ` (err)` : ""}</td>
-                        <td className="px-3 py-2 tabular-nums">{cb}{lb?.error ? ` (err)` : ""}</td>
-                        <td className="px-3 py-2 tabular-nums text-bloom-brown/80 dark:text-bloom-cream/70">
-                          {ca - cb === 0 ? "—" : ca - cb > 0 ? `+${ca - cb}` : String(ca - cb)}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          ) : null}
+          <div className="flex flex-wrap gap-4 text-sm font-semibold">
+            <Link href="/" className="text-text-muted underline-offset-2 hover:underline">
+              Screening
+            </Link>
+            <Link href="/report" className="text-text-muted underline-offset-2 hover:underline">
+              Report
+            </Link>
+          </div>
         </div>
-      )}
-    </div>
+
+        {!screenA && !screenB ? (
+          <p className="mt-8 text-sm text-text-muted">
+            No snapshots found. Run a screening, then use “Save snapshot A” and “Save snapshot B” to compare scenarios.
+          </p>
+        ) : (
+          <div className="mt-8 space-y-8">
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="rounded-[16px] border border-border bg-bg-soft p-4">
+                <h2 className="text-base font-semibold tracking-tight">Snapshot A</h2>
+                {screenA && sessionA ? (
+                  <SnapshotMeta session={sessionA} screen={screenA} summary={sumA!} />
+                ) : (
+                  <p className="mt-2 text-sm text-text-muted">Empty — save from the screening page.</p>
+                )}
+              </div>
+              <div className="rounded-[16px] border border-border bg-bg-soft p-4">
+                <h2 className="text-base font-semibold tracking-tight">Snapshot B</h2>
+                {screenB && sessionB ? (
+                  <SnapshotMeta session={sessionB} screen={screenB} summary={sumB!} />
+                ) : (
+                  <p className="mt-2 text-sm text-text-muted">Empty — save from the screening page.</p>
+                )}
+              </div>
+            </div>
+
+            {screenA && screenB && allIds.length > 0 ? (
+              <div className="overflow-x-auto rounded-[16px] border border-border">
+                <table className="w-full min-w-[640px] border-collapse text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-border bg-bg-soft">
+                      <th className="px-3 py-2 font-semibold text-text-strong">Layer</th>
+                      <th className="px-3 py-2 font-semibold text-text-strong">A — count</th>
+                      <th className="px-3 py-2 font-semibold text-text-strong">B — count</th>
+                      <th className="px-3 py-2 font-semibold text-text-strong">Δ</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {allIds.map((id) => {
+                      const la = byIdA.get(id);
+                      const lb = byIdB.get(id);
+                      const ca = la?.featureCount ?? 0;
+                      const cb = lb?.featureCount ?? 0;
+                      const name = la?.name ?? lb?.name ?? id;
+                      return (
+                        <tr key={id} className="border-b border-border/60">
+                          <td className="px-3 py-2 text-text-strong">{name}</td>
+                          <td className="px-3 py-2 tabular-nums">{ca}{la?.error ? ` (err)` : ""}</td>
+                          <td className="px-3 py-2 tabular-nums">{cb}{lb?.error ? ` (err)` : ""}</td>
+                          <td className="px-3 py-2 tabular-nums text-text-muted">
+                            {ca - cb === 0 ? "—" : ca - cb > 0 ? `+${ca - cb}` : String(ca - cb)}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            ) : null}
+          </div>
+        )}
+      </div>
+    </AppShell>
   );
 }
 

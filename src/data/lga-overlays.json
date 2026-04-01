@@ -1,4 +1,83 @@
 {
+  "qld_offset": [
+    {
+      "id": "qld-cadastre-parcels",
+      "domain": 12,
+      "tier": "watch",
+      "dataMode": "spatial",
+      "name": "Cadastre parcels (DCDB) — indicative lot boundaries",
+      "serviceBaseUrl": "https://spatial-gis.information.qld.gov.au/arcgis/rest/services/PlanningCadastre/LandParcelPropertyFramework/MapServer",
+      "layerId": 4,
+      "glossaryKey": "qld-cadastre-parcels",
+      "attribution": "State of Queensland (Department of Resources), Land Parcel Property Framework (DCDB)"
+    },
+    {
+      "id": "qld-tenure",
+      "domain": 12,
+      "tier": "trigger",
+      "dataMode": "spatial",
+      "name": "Land tenure (indicative)",
+      "serviceBaseUrl": "https://spatial-gis.information.qld.gov.au/arcgis/rest/services/PlanningCadastre/LandParcelPropertyFramework/MapServer",
+      "layerId": 13,
+      "glossaryKey": "qld-tenure",
+      "attribution": "State of Queensland (Department of Resources), Land Parcel Property Framework (tenure)"
+    },
+    {
+      "id": "qld-mineral-tenement",
+      "domain": 13,
+      "tier": "trigger",
+      "dataMode": "spatial",
+      "name": "Mineral tenements (indicative)",
+      "serviceBaseUrl": "https://spatial-gis.information.qld.gov.au/arcgis/rest/services/Economy/MineralTenement/MapServer",
+      "layerId": 0,
+      "glossaryKey": "qld-mineral-tenement",
+      "attribution": "State of Queensland (Department of Resources), Mineral Tenement"
+    },
+    {
+      "id": "qld-floodcheck-rapid-hazard",
+      "domain": 11,
+      "tier": "watch",
+      "dataMode": "spatial",
+      "name": "FloodCheck rapid hazard assessment (statewide indicator)",
+      "serviceBaseUrl": "https://spatial-gis.information.qld.gov.au/arcgis/rest/services/FloodCheck/RapidHazardAssessment/MapServer",
+      "layerId": 0,
+      "glossaryKey": "qld-floodcheck-rapid-hazard",
+      "attribution": "State of Queensland (Department of Resources), FloodCheck Rapid Hazard Assessment"
+    },
+    {
+      "id": "qld-bushfire-prone-area",
+      "domain": 8,
+      "tier": "watch",
+      "dataMode": "spatial",
+      "name": "Bushfire prone area (statewide indicator)",
+      "serviceBaseUrl": "https://tiles.arcgis.com/tiles/vkTwD8kHw2woKBqV/arcgis/rest/services/Bushfire_Prone_Areas/MapServer",
+      "layerId": 0,
+      "glossaryKey": "qld-bushfire-prone-area",
+      "attribution": "State of Queensland (QFES), Bushfire Prone Areas"
+    },
+    {
+      "id": "qld-state-development-areas",
+      "domain": 14,
+      "tier": "watch",
+      "dataMode": "spatial",
+      "name": "State Development Areas (SDA)",
+      "serviceBaseUrl": "https://spatial-gis.information.qld.gov.au/arcgis/rest/services/PlanningCadastre/StateDevelopmentAreas/MapServer",
+      "layerId": 0,
+      "glossaryKey": "qld-sda",
+      "attribution": "State of Queensland, State Development Areas"
+    },
+    {
+      "id": "qld-priority-development-areas",
+      "domain": 14,
+      "tier": "watch",
+      "dataMode": "spatial",
+      "name": "Priority Development Areas (PDA)",
+      "serviceBaseUrl": "https://spatial-gis.information.qld.gov.au/arcgis/rest/services/PlanningCadastre/PriorityDevelopmentAreas/MapServer",
+      "layerId": 0,
+      "glossaryKey": "qld-pda",
+      "attribution": "State of Queensland, Priority Development Areas"
+    }
+  ],
   "cairns": [],
   "brisbane": [
     {

@@ -27,9 +27,35 @@ export function Th({ children }: { children: ReactNode }) {
   );
 }
 
+export function ThX({ children, className }: { children: ReactNode; className?: string }) {
+  return (
+    <th
+      className={[
+        "border-b border-[var(--report-border)] px-3 py-2 font-semibold text-[var(--report-ink)] print:border-black",
+        className ?? "",
+      ].join(" ")}
+    >
+      {children}
+    </th>
+  );
+}
+
 export function Td({ children }: { children: ReactNode }) {
   return (
     <td className="border-b border-[var(--report-border)] px-3 py-2 align-top text-[var(--report-ink)] print:border-black">
+      {children}
+    </td>
+  );
+}
+
+export function TdX({ children, className }: { children: ReactNode; className?: string }) {
+  return (
+    <td
+      className={[
+        "border-b border-[var(--report-border)] px-3 py-2 align-top text-[var(--report-ink)] print:border-black",
+        className ?? "",
+      ].join(" ")}
+    >
       {children}
     </td>
   );

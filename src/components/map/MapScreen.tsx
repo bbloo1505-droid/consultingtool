@@ -7,8 +7,10 @@ import MapboxDraw from "maplibre-gl-draw";
 import type { Feature, Polygon, MultiPolygon } from "geojson";
 import type {
   LgaId,
+  OffsetMatterType,
   ProjectMetadata,
   ScreenResponse,
+  ScreeningMode,
   StoredScreeningSession,
 } from "@/types/screening";
 import glossary from "@/data/glossary.json";
@@ -36,6 +38,9 @@ import { StatusChip } from "@/components/ui/StatusChip";
 import { Tabs } from "@/components/ui/Tabs";
 import { SummaryStatCard } from "@/components/ui/SummaryStatCard";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { auditOffsetCoverage } from "@/lib/offset/coverage";
+import { groupOffsetLayers } from "@/lib/offset/groups";
+import { evaluateOffsetSuitability, matterLabel } from "@/lib/offset/rules";
 
 type GlossaryEntry = {
   title: string;
@@ -68,6 +73,8 @@ export function MapScreen() {
   const suppressDrawSourceRef = useRef(false);
 
   const [lga, setLga] = useState<LgaId>("qld");
+  const [mode, setMode] = useState<ScreeningMode>("standard");
+  const [offsetMatterType, setOffsetMatterType] = useState<OffsetMatterType>("manual_review_required");
   const [bufferMeters, setBufferMeters] = useState(0);
   const [project, setProject] = useState<ProjectMetadata>(defaultProject);
   const [aoiSource, setAoiSource] = useState<NonNullable<StoredScreeningSession["aoiSource"]>>("draw");
@@ -99,6 +106,16 @@ export function MapScreen() {
   useEffect(() => {
     saveProjectFieldsToStorage(project);
   }, [project]);
+
+  useEffect(() => {
+    // Keep packs aligned with review mode (dedicated offset pack).
+    if (mode === "offset" && lga !== "qld_offset") {
+      setLga("qld_offset");
+    }
+    if (mode === "standard" && lga === "qld_offset") {
+      setLga("qld");
+    }
+  }, [mode, lga]);
 
   useEffect(() => {
     if (!mapEl.current || mapRef.current) return;
@@ -375,6 +392,8 @@ export function MapScreen() {
         project,
         bufferMeters,
         aoiSource,
+        mode,
+        offsetMatterType: mode === "offset" ? offsetMatterType : undefined,
       };
       setLastSession(session);
       try {
@@ -465,6 +484,18 @@ export function MapScreen() {
   const totalHits = hitLayers.length;
   const totalFeatures = result?.layers.reduce((s, l) => s + l.featureCount, 0) ?? 0;
   const errorCount = layerErrors.length;
+  const offsetGrouped = mode === "offset" && result ? groupOffsetLayers(result.layers) : null;
+  const fatalCount = offsetGrouped ? offsetGrouped.filter((x) => x.severity === "fatal" && x.layer.featureCount > 0 && !x.layer.error).length : 0;
+  const riskCount = offsetGrouped ? offsetGrouped.filter((x) => x.severity === "risk" && x.layer.featureCount > 0 && !x.layer.error).length : 0;
+  const positiveCount = offsetGrouped ? offsetGrouped.filter((x) => x.severity === "positive" && x.layer.featureCount > 0 && !x.layer.error).length : 0;
+  const coverageAudit =
+    mode === "offset" && result
+      ? auditOffsetCoverage(result.layers.map((l) => ({ glossaryKey: l.glossaryKey, domain: l.domain })))
+      : null;
+  const suitability =
+    mode === "offset" && offsetGrouped
+      ? evaluateOffsetSuitability(offsetGrouped, offsetMatterType)
+      : null;
 
   const clearAoi = () => {
     drawRef.current?.deleteAll();
@@ -512,7 +543,12 @@ export function MapScreen() {
         lastSession ??
         (result ? ({ screen: result, project, bufferMeters, aoiSource } as StoredScreeningSession) : null);
       if (session) {
-        const next: StoredScreeningSession = { ...session, mapSnapshotDataUrl: url };
+        const next: StoredScreeningSession = {
+          ...session,
+          mode,
+          offsetMatterType: mode === "offset" ? offsetMatterType : undefined,
+          mapSnapshotDataUrl: url,
+        };
         setLastSession(next);
         try {
           sessionStorage.setItem(SCREENING_STORAGE_KEY, JSON.stringify(next));
@@ -563,6 +599,55 @@ export function MapScreen() {
               </div>
             ) : null}
           </div>
+
+          <SidebarSection
+            title="Review mode"
+            description="Choose a workflow. Offset mode groups results and applies desktop-review logic."
+          >
+            <div className="grid gap-3">
+              <div>
+                <FieldLabel label="Mode" />
+                <PremiumSelect
+                  value={mode}
+                  onChange={(e) => setMode(e.target.value as ScreeningMode)}
+                >
+                  <option value="standard">Standard site screening</option>
+                  <option value="offset">Offset site desktop review (QLD)</option>
+                </PremiumSelect>
+              </div>
+
+              {mode === "offset" ? (
+                <div>
+                  <FieldLabel
+                    label="Impacted matter type (assumption)"
+                    hint="Used to frame suitability checks. This does not replace policy interpretation."
+                  />
+                  <PremiumSelect
+                    value={offsetMatterType}
+                    onChange={(e) => setOffsetMatterType(e.target.value as OffsetMatterType)}
+                  >
+                    <option value="manual_review_required">Manual review required (generic)</option>
+                    <option value="regional_ecosystem">Regional ecosystem offsets</option>
+                    <option value="wetland">Wetland offsets</option>
+                    <option value="connectivity">Connectivity offsets</option>
+                    <option value="threatened_species_habitat">Threatened species / habitat</option>
+                    <option value="koala">Koala-related</option>
+                    <option value="protected_area_related">Protected area-related</option>
+                  </PremiumSelect>
+                </div>
+              ) : null}
+
+              {mode === "offset" ? (
+                <div className="rounded-[14px] border border-border bg-surface/5 p-3 text-xs leading-relaxed text-bg-soft/70">
+                  <p className="font-semibold text-bg-soft/85">Offset site objective</p>
+                  <p className="mt-1">
+                    Screens for constraints, legal-security risks, delivery risks, and suitability indicators.
+                    Some checks (bioregion/subregion matching, council overlays, tenure/easements) may still require manual confirmation.
+                  </p>
+                </div>
+              ) : null}
+            </div>
+          </SidebarSection>
 
           <SidebarSection
             title="1. Project details"
@@ -725,11 +810,17 @@ export function MapScreen() {
                 <div>
                   <FieldLabel label="Study area pack" hint="Change pack then re-run—no redraw needed." />
                   <PremiumSelect value={lga} onChange={(e) => setLga(e.target.value as LgaId)}>
-                    <option value="qld">Queensland (statewide)</option>
-                    <option value="brisbane">Brisbane / SEQ — flood overlays</option>
-                    <option value="gold_coast">Gold Coast label — SEQ flood overlays</option>
-                    <option value="sunshine_coast">Sunshine Coast label — SEQ flood overlays</option>
-                    <option value="cairns">Cairns — regional pack</option>
+                    {mode === "offset" ? (
+                      <option value="qld_offset">Queensland — offset desktop review pack</option>
+                    ) : (
+                      <>
+                        <option value="qld">Queensland (statewide)</option>
+                        <option value="brisbane">Brisbane / SEQ — flood overlays</option>
+                        <option value="gold_coast">Gold Coast label — SEQ flood overlays</option>
+                        <option value="sunshine_coast">Sunshine Coast label — SEQ flood overlays</option>
+                        <option value="cairns">Cairns — regional pack</option>
+                      </>
+                    )}
                   </PremiumSelect>
                 </div>
               </div>
@@ -876,89 +967,243 @@ export function MapScreen() {
               />
 
               {activeResultsTab === "summary" ? (
-                <div className="mt-4 grid gap-3 lg:grid-cols-3">
-                  <SummaryStatCard
-                    label="Hit layers"
-                    value={totalHits}
-                    hint="Layers with one or more intersecting features."
-                    icon={<LayersIcon />}
-                  />
-                  <SummaryStatCard
-                    label="Total feature records"
-                    value={totalFeatures.toLocaleString()}
-                    hint="Sum of returned features across layers (not necessarily distinct on-ground values)."
-                    icon={<HashIcon />}
-                  />
-                  <SummaryStatCard
-                    label="Run quality"
-                    value={errorCount ? "Review required" : "OK"}
-                    hint={errorCount ? "One or more layer queries failed." : "No layer errors detected."}
-                    icon={<ShieldIcon />}
-                  />
-                </div>
+                mode === "offset" ? (
+                  <div className="mt-4 grid gap-3 lg:grid-cols-4">
+                    <SummaryStatCard
+                      label="Fatal flaws"
+                      value={fatalCount}
+                      hint="Potential deal-breakers for offset availability."
+                      icon={<FlagIcon />}
+                    />
+                    <SummaryStatCard
+                      label="Key constraints"
+                      value={riskCount}
+                      hint="Statutory/legal/delivery risks with hits."
+                      icon={<LayersIcon />}
+                    />
+                    <SummaryStatCard
+                      label="Suitability signals"
+                      value={positiveCount}
+                      hint="Layers suggesting potential matter presence/capacity."
+                      icon={<LeafIcon />}
+                    />
+                    <SummaryStatCard
+                      label="Suitability rating"
+                      value={suitability?.rating ?? "—"}
+                      hint={mode === "offset" ? `Matter type: ${matterLabel(offsetMatterType)}` : undefined}
+                      icon={<ShieldIcon />}
+                    />
+                    {coverageAudit ? (
+                      <div className="lg:col-span-4 mt-1 grid gap-3 lg:grid-cols-2">
+                        <div className="rounded-[16px] border border-border bg-bg-panel/55 p-4 shadow-[0_10px_24px_rgba(2,6,23,0.12)]">
+                          <p className="text-sm font-semibold text-bg-soft">Enabled families</p>
+                          <ul className="mt-2 space-y-1 text-sm text-bg-soft/75">
+                            {coverageAudit.enabled.map((f) => (
+                              <li key={f} className="flex items-start gap-2">
+                                <span className="mt-1 h-2 w-2 rounded-full bg-success/80" />
+                                <span className="min-w-0">{f}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                        <div className="rounded-[16px] border border-border bg-bg-panel/55 p-4 shadow-[0_10px_24px_rgba(2,6,23,0.12)]">
+                          <p className="text-sm font-semibold text-bg-soft">Missing / manual checks</p>
+                          <ul className="mt-2 space-y-1 text-sm text-bg-soft/75">
+                            {coverageAudit.missing.map((f) => (
+                              <li key={f} className="flex items-start gap-2">
+                                <span className="mt-1 h-2 w-2 rounded-full bg-warning/80" />
+                                <span className="min-w-0">{f}</span>
+                              </li>
+                            ))}
+                          </ul>
+                          <p className="mt-3 text-xs text-bg-soft/60">
+                            Offset desktop review still requires council overlays and authoritative tenure/encumbrance checks.
+                          </p>
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : (
+                  <div className="mt-4 grid gap-3 lg:grid-cols-3">
+                    <SummaryStatCard
+                      label="Hit layers"
+                      value={totalHits}
+                      hint="Layers with one or more intersecting features."
+                      icon={<LayersIcon />}
+                    />
+                    <SummaryStatCard
+                      label="Total feature records"
+                      value={totalFeatures.toLocaleString()}
+                      hint="Sum of returned features across layers (not necessarily distinct on-ground values)."
+                      icon={<HashIcon />}
+                    />
+                    <SummaryStatCard
+                      label="Run quality"
+                      value={errorCount ? "Review required" : "OK"}
+                      hint={errorCount ? "One or more layer queries failed." : "No layer errors detected."}
+                      icon={<ShieldIcon />}
+                    />
+                  </div>
+                )
               ) : null}
 
               {activeResultsTab === "constraints" ? (
                 <div className="mt-4">
-                  <div className="grid gap-3 lg:grid-cols-2">
-                    {result.layers.map((layer) => {
-                      const g = GLOSSARY[layer.glossaryKey];
-                      const isHit = layer.featureCount > 0;
-                      return (
-                        <div
-                          key={layer.catalogId}
-                          className="rounded-[16px] border border-border bg-bg-panel/55 p-4 shadow-[0_10px_24px_rgba(2,6,23,0.12)]"
-                        >
-                          <div className="flex flex-wrap items-start justify-between gap-2">
-                            <div className="min-w-0">
-                              <p className="text-sm font-semibold text-bg-soft">{layer.name}</p>
-                              <p className="mt-1 text-xs text-bg-soft/60">
-                                Tier: <span className="font-semibold text-bg-soft/80">{layer.tier}</span> · Domain{" "}
-                                <span className="font-semibold text-bg-soft/80">{layer.domain}</span>
-                              </p>
+                  {mode === "offset" && offsetGrouped ? (
+                    <div className="space-y-4">
+                      {(
+                        [
+                          "Fatal Flaws",
+                          "Statutory Constraints",
+                          "Offset Suitability Tests",
+                          "Legal Security / Land Availability",
+                          "Delivery Risk / Practical Constraints",
+                          "Information Only",
+                        ] as const
+                      ).map((group) => {
+                        const items = offsetGrouped.filter((x) => x.group === group);
+                        const hitItems = items.filter((x) => x.layer.featureCount > 0 && !x.layer.error);
+                        return (
+                          <div
+                            key={group}
+                            className="rounded-[16px] border border-border bg-bg-panel/55 p-4 shadow-[0_10px_24px_rgba(2,6,23,0.12)]"
+                          >
+                            <div className="flex flex-wrap items-center justify-between gap-3">
+                              <div>
+                                <p className="text-sm font-semibold text-bg-soft">{group}</p>
+                                <p className="mt-1 text-xs text-bg-soft/60">
+                                  {hitItems.length} with hits · {items.length} layers assessed
+                                </p>
+                              </div>
+                              <div className="flex flex-wrap gap-2">
+                                {group === "Fatal Flaws" ? <StatusChip tone="danger">Deal-breakers</StatusChip> : null}
+                                {group === "Offset Suitability Tests" ? <StatusChip tone="good">Positives</StatusChip> : null}
+                                {group === "Information Only" ? <StatusChip>Context</StatusChip> : null}
+                              </div>
                             </div>
-                            <div className="flex flex-wrap items-center gap-2">
-                              {layer.error ? <StatusChip tone="warn">Query error</StatusChip> : null}
-                              {layer.exceededTransferLimit ? <StatusChip tone="warn">Capped</StatusChip> : null}
-                              <StatusChip tone={isHit ? "brand" : "neutral"}>
-                                {layer.featureCount} feature{layer.featureCount === 1 ? "" : "s"}
-                              </StatusChip>
+
+                            <div className="mt-3 grid gap-3 lg:grid-cols-2">
+                              {items.map(({ layer, severity, whyItMatters, followUp }) => {
+                                const g = GLOSSARY[layer.glossaryKey];
+                                const isHit = layer.featureCount > 0;
+                                const chipTone =
+                                  severity === "fatal"
+                                    ? "danger"
+                                    : severity === "positive"
+                                      ? "good"
+                                      : severity === "risk"
+                                        ? "warn"
+                                        : "neutral";
+                                return (
+                                  <div
+                                    key={layer.catalogId}
+                                    className="rounded-[16px] border border-border bg-bg-panel/65 p-4"
+                                  >
+                                    <div className="flex flex-wrap items-start justify-between gap-2">
+                                      <div className="min-w-0">
+                                        <p className="text-sm font-semibold text-bg-soft">{layer.name}</p>
+                                        <p className="mt-1 text-xs text-bg-soft/60">
+                                          Tier: <span className="font-semibold text-bg-soft/80">{layer.tier}</span> · Domain{" "}
+                                          <span className="font-semibold text-bg-soft/80">{layer.domain}</span>
+                                        </p>
+                                      </div>
+                                      <div className="flex flex-wrap items-center gap-2">
+                                        {layer.error ? <StatusChip tone="warn">Query error</StatusChip> : null}
+                                        {layer.exceededTransferLimit ? <StatusChip tone="warn">Capped</StatusChip> : null}
+                                        <StatusChip tone={chipTone}>
+                                          {isHit ? `${layer.featureCount} hit` : "No hit"}
+                                        </StatusChip>
+                                      </div>
+                                    </div>
+
+                                    {layer.error ? (
+                                      <p className="mt-2 text-xs text-bg-soft/80">{layer.error}</p>
+                                    ) : null}
+
+                                    <div className="mt-3 text-sm">
+                                      <p className="text-xs font-semibold text-bg-soft/75">Why it matters</p>
+                                      <p className="mt-1 text-sm leading-relaxed text-bg-soft/70">{whyItMatters}</p>
+                                      <p className="mt-2 text-xs font-semibold text-bg-soft/75">Follow-up</p>
+                                      <p className="mt-1 text-sm leading-relaxed text-bg-soft/70">{followUp}</p>
+                                    </div>
+
+                                    {g ? (
+                                      <div className="mt-3 text-sm">
+                                        <p className="text-xs font-semibold text-bg-soft/75">{g.title}</p>
+                                        <p className="mt-2 text-sm leading-relaxed text-bg-soft/70">{g.summary}</p>
+                                      </div>
+                                    ) : null}
+
+                                    <p className="mt-3 text-xs text-bg-soft/45">Source: {layer.attribution}</p>
+                                  </div>
+                                );
+                              })}
                             </div>
                           </div>
-
-                          {layer.error ? (
-                            <p className="mt-2 text-xs text-bg-soft/80">{layer.error}</p>
-                          ) : null}
-                          {g ? (
-                            <div className="mt-3 text-sm">
-                              <p className="text-xs font-semibold text-bg-soft/75">{g.title}</p>
-                              <p className="mt-2 text-sm leading-relaxed text-bg-soft/70">{g.summary}</p>
-                              <p className="mt-2 text-xs text-bg-soft/60">
-                                Next: <span className="font-semibold text-bg-soft/75">{g.nextSteps}</span>
-                              </p>
-                              {g.references && g.references.length > 0 ? (
-                                <ul className="mt-3 flex flex-wrap gap-2">
-                                  {g.references.map((r) => (
-                                    <li key={r.url}>
-                                      <a
-                                        href={r.url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="focus-ring inline-flex h-8 items-center rounded-full border border-border bg-surface/10 px-3 text-xs font-semibold text-bg-soft/75 hover:bg-surface/15 hover:text-bg-soft"
-                                      >
-                                        {r.label}
-                                      </a>
-                                    </li>
-                                  ))}
-                                </ul>
-                              ) : null}
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="grid gap-3 lg:grid-cols-2">
+                      {result.layers.map((layer) => {
+                        const g = GLOSSARY[layer.glossaryKey];
+                        const isHit = layer.featureCount > 0;
+                        return (
+                          <div
+                            key={layer.catalogId}
+                            className="rounded-[16px] border border-border bg-bg-panel/55 p-4 shadow-[0_10px_24px_rgba(2,6,23,0.12)]"
+                          >
+                            <div className="flex flex-wrap items-start justify-between gap-2">
+                              <div className="min-w-0">
+                                <p className="text-sm font-semibold text-bg-soft">{layer.name}</p>
+                                <p className="mt-1 text-xs text-bg-soft/60">
+                                  Tier: <span className="font-semibold text-bg-soft/80">{layer.tier}</span> · Domain{" "}
+                                  <span className="font-semibold text-bg-soft/80">{layer.domain}</span>
+                                </p>
+                              </div>
+                              <div className="flex flex-wrap items-center gap-2">
+                                {layer.error ? <StatusChip tone="warn">Query error</StatusChip> : null}
+                                {layer.exceededTransferLimit ? <StatusChip tone="warn">Capped</StatusChip> : null}
+                                <StatusChip tone={isHit ? "brand" : "neutral"}>
+                                  {layer.featureCount} feature{layer.featureCount === 1 ? "" : "s"}
+                                </StatusChip>
+                              </div>
                             </div>
-                          ) : null}
-                          <p className="mt-3 text-xs text-bg-soft/45">Source: {layer.attribution}</p>
-                        </div>
-                      );
-                    })}
-                  </div>
+
+                            {layer.error ? (
+                              <p className="mt-2 text-xs text-bg-soft/80">{layer.error}</p>
+                            ) : null}
+                            {g ? (
+                              <div className="mt-3 text-sm">
+                                <p className="text-xs font-semibold text-bg-soft/75">{g.title}</p>
+                                <p className="mt-2 text-sm leading-relaxed text-bg-soft/70">{g.summary}</p>
+                                <p className="mt-2 text-xs text-bg-soft/60">
+                                  Next: <span className="font-semibold text-bg-soft/75">{g.nextSteps}</span>
+                                </p>
+                                {g.references && g.references.length > 0 ? (
+                                  <ul className="mt-3 flex flex-wrap gap-2">
+                                    {g.references.map((r) => (
+                                      <li key={r.url}>
+                                        <a
+                                          href={r.url}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="focus-ring inline-flex h-8 items-center rounded-full border border-border bg-surface/10 px-3 text-xs font-semibold text-bg-soft/75 hover:bg-surface/15 hover:text-bg-soft"
+                                        >
+                                          {r.label}
+                                        </a>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                ) : null}
+                              </div>
+                            ) : null}
+                            <p className="mt-3 text-xs text-bg-soft/45">Source: {layer.attribution}</p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                   {hits.length === 0 && layerErrors.length === 0 ? (
                     <p className="mt-4 text-sm text-bg-soft/70">
                       No intersecting features were returned for the current AOI and pack.
@@ -1144,6 +1389,39 @@ function ShieldIcon() {
         strokeWidth="1.6"
         strokeLinecap="round"
         strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function FlagIcon() {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" className="h-5 w-5" aria-hidden="true">
+      <path
+        d="M5 17V4.5C5 4 5.4 3.6 5.9 3.6H14.2C14.8 3.6 15 4.4 14.6 4.8L13.2 6.2C12.9 6.5 12.9 7 13.2 7.3L14.6 8.7C15 9.1 14.8 9.9 14.2 9.9H5.9"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function LeafIcon() {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" className="h-5 w-5" aria-hidden="true">
+      <path
+        d="M16.5 3.8C11.5 3.2 6.2 5.3 4.2 9.2C2.8 11.9 3.4 15.1 5.8 16.6C8.3 18.1 12.1 17.4 14.5 14.2C16.6 11.5 17.2 7.3 16.5 3.8Z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M6 15.2C8.3 12.2 11.2 9.8 15.2 7.5"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
       />
     </svg>
   );

@@ -1,14 +1,12 @@
 import type { ReactNode } from "react";
-import { SiteHeader } from "@/components/SiteHeader";
+import { AppShell } from "@/components/shell/AppShell";
 
 export default function InsightsLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="flex min-h-screen flex-col">
-      <SiteHeader
-        title="QLD environmental screening"
-        subtitle="Data visualisations from your last screening run"
-      />
-      <div className="flex-1">{children}</div>
-    </div>
+    <AppShell title="Insights">
+      <div className="rounded-[18px] border border-border bg-surface p-5 text-text-strong shadow-[0_14px_32px_rgba(2,6,23,0.16)]">
+        {children}
+      </div>
+    </AppShell>
   );
 }

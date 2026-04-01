@@ -85,6 +85,48 @@
     "nextSteps": "Confirm wetland delineation and buffer applicability on the ground.",
     "references": []
   },
+  "qld-cadastre-parcels": {
+    "title": "Cadastre parcels (DCDB) — indicative boundaries",
+    "summary": "Digital Cadastral Database parcels provide an indicative lot/plan boundary reference for desktop review. This does not replace surveyed boundaries or cadastral searches.",
+    "nextSteps": "Confirm lot/plan, surveyed boundary, and any boundary adjustments via authoritative cadastral sources and project survey if required.",
+    "references": [{ "label": "Queensland land and title information", "url": "https://www.qld.gov.au/environment/land/title" }]
+  },
+  "qld-tenure": {
+    "title": "Land tenure (indicative)",
+    "summary": "Indicative tenure mapping can affect legal security pathways for offsets (e.g. freehold vs state land, reserve status, protected tenure).",
+    "nextSteps": "Confirm tenure, land status, and any constraints using authoritative tenure datasets and legal due diligence.",
+    "references": [{ "label": "Queensland land and tenure", "url": "https://www.qld.gov.au/environment/land" }]
+  },
+  "qld-mineral-tenement": {
+    "title": "Mineral tenements (indicative)",
+    "summary": "Mining and resources tenure can introduce competing rights and practical constraints for long-term offset delivery and management.",
+    "nextSteps": "Confirm tenure status/conditions and overlapping authorities via authoritative tenure registers and specialist advice.",
+    "references": [{ "label": "Queensland resources and mining", "url": "https://www.qld.gov.au/environment/land" }]
+  },
+  "qld-floodcheck-rapid-hazard": {
+    "title": "Flood hazard (statewide indicator)",
+    "summary": "Flood hazard mapping is a desktop indicator of potential delivery risk. It may affect access, on-ground works feasibility, and long-term management costs.",
+    "nextSteps": "Confirm flood mapping and design flood event assumptions using appropriate council/state datasets and engineering advice.",
+    "references": [{ "label": "FloodCheck / QLD flood information", "url": "https://www.qld.gov.au/" }]
+  },
+  "qld-bushfire-prone-area": {
+    "title": "Bushfire prone area (statewide indicator)",
+    "summary": "Bushfire prone area mapping is a desktop indicator of potential hazard exposure affecting long-term management and delivery feasibility.",
+    "nextSteps": "Confirm bushfire hazard mapping and management obligations using QFES and local planning overlays; consider specialist bushfire assessment where relevant.",
+    "references": [{ "label": "Queensland Fire and Emergency Services", "url": "https://www.qld.gov.au/emergency/services/qfes" }]
+  },
+  "qld-sda": {
+    "title": "State Development Areas (SDA)",
+    "summary": "State Development Areas are state-declared planning areas. Presence may indicate additional planning context that could affect long-term offset delivery and management.",
+    "nextSteps": "Confirm SDA boundaries and applicable requirements in relevant state instruments and local planning scheme mapping.",
+    "references": [{ "label": "State Development Areas (Qld)", "url": "https://www.statedevelopment.qld.gov.au/" }]
+  },
+  "qld-pda": {
+    "title": "Priority Development Areas (PDA)",
+    "summary": "Priority Development Areas are declared for economic development or community purposes. Presence may affect long-term offset security and management expectations.",
+    "nextSteps": "Confirm PDA boundaries and applicable requirements in relevant state instruments and local planning scheme mapping.",
+    "references": [{ "label": "Priority Development Areas (Qld)", "url": "https://www.statedevelopment.qld.gov.au/" }]
+  },
   "mses-wildlife-ev": {
     "title": "MSES - wildlife habitat (endangered or vulnerable)",
     "summary": "Mapped habitat for EV species triggers biodiversity and assessment attention.",
