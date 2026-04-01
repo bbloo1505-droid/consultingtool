@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { getTerm1Week, TERM1_WEEKS } from "@/data/term1-weeks";
 import {
   cardIdForGlossary,
@@ -28,15 +28,17 @@ export function FlashcardReviewQueue() {
   const [flipped, setFlipped] = useState(false);
   const [doneSession, setDoneSession] = useState(0);
 
-  const queue = useMemo(() => {
+  // Recomputed after each rating; depends on localStorage state (not React state).
+  const queue = (() => {
+    void doneSession;
     const all = buildAllIds();
     const due = getDueCardIds(all);
     return sortDueCardIds(due);
-  }, [doneSession]);
+  })();
 
   const currentId = queue[0];
 
-  const card = useMemo(() => {
+  const card = (() => {
     if (!currentId) return null;
     const parsed = parseCardId(currentId);
     if (!parsed) return null;
@@ -45,7 +47,7 @@ export function FlashcardReviewQueue() {
     const g = wk.glossary[parsed.termIndex];
     if (!g) return null;
     return { ...parsed, term: g.term, definition: g.definition };
-  }, [currentId]);
+  })();
 
   const onRate = (r: SrsRating) => {
     if (!currentId) return;

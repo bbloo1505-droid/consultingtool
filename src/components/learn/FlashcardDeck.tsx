@@ -16,9 +16,7 @@ export function FlashcardDeck({ entries, week }: Props) {
   const [i, setI] = useState(0);
   const [flipped, setFlipped] = useState(false);
 
-  if (entries.length === 0) return null;
-
-  const cur = entries[i];
+  const cur = entries[i] ?? entries[0];
   const cardId = cardIdForGlossary(week, i);
 
   const onRate = useCallback(
@@ -29,6 +27,8 @@ export function FlashcardDeck({ entries, week }: Props) {
     },
     [cardId, entries.length],
   );
+
+  if (entries.length === 0 || !cur) return null;
 
   return (
     <div className="rounded-xl border border-bloom-brown/15 bg-white p-4 dark:border-bloom-gold/20 dark:bg-bloom-ink/50">

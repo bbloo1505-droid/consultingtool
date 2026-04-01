@@ -81,6 +81,11 @@ export type StoredScreeningSession = {
   bufferMeters?: number;
   /** draw | generic upload | specific format from boundary file parser */
   aoiSource?: "draw" | "upload" | "geojson" | "kml" | "kmz" | "shapefile" | "address";
+  /**
+   * Optional client-captured map snapshot (data URL) for report presentation.
+   * Stored client-side only; not part of the API payload.
+   */
+  mapSnapshotDataUrl?: string;
 };
 
 export type ScreenResponse = {

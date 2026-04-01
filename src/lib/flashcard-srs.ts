@@ -46,7 +46,7 @@ export function parseCardId(id: string): { week: number; termIndex: number } | n
 
 export function rateCard(cardId: string, rating: SrsRating): CardSrsState {
   const m = loadMap();
-  let cur = m[cardId] ?? { cardId, box: 0, due: Date.now() };
+  const cur = m[cardId] ?? { cardId, box: 0, due: Date.now() };
   let box = cur.box;
 
   switch (rating) {

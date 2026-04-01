@@ -7,6 +7,8 @@ import glossary from "@/data/glossary.json";
 import { layersToCsv } from "@/lib/csv-export";
 import { buildMethodsParagraph } from "@/lib/methods-blurb";
 import { parseStoredScreening, SCREENING_STORAGE_KEY } from "@/lib/screening-storage";
+import { ReportSection } from "@/components/report/ReportSection";
+import { BrandedTable, Td, Th } from "@/components/report/BrandedTable";
 
 type GlossaryEntry = {
   title: string;
@@ -96,11 +98,19 @@ export default function ReportPage() {
 
   if (!data || !stats) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-10">
-        <p className="text-bloom-brown/90 dark:text-bloom-cream/80">No screening data found. Run a screening from the home page first.</p>
-        <Link className="mt-4 inline-block text-bloom-brown underline dark:text-bloom-gold-light" href="/">
-          Back to map
-        </Link>
+      <div className="mx-auto max-w-3xl px-2 py-10">
+        <div className="rounded-[16px] border border-border bg-surface p-6 text-text-strong shadow-[0_10px_24px_rgba(2,6,23,0.10)]">
+          <p className="text-sm font-semibold">No screening data found</p>
+          <p className="mt-2 text-sm text-text-muted">
+            Run a screening first. The report is generated from the most recent successful run stored in this browser session.
+          </p>
+          <Link
+            className="mt-4 inline-flex h-10 items-center rounded-[14px] bg-brand-primary px-4 text-sm font-semibold text-brand-dark hover:bg-brand-primary-hover"
+            href="/"
+          >
+            Back to map
+          </Link>
+        </div>
       </div>
     );
   }
@@ -109,27 +119,28 @@ export default function ReportPage() {
   const hits = stats.hits;
   const noHitLayers = data.layers.filter((l) => l.featureCount === 0 && !l.error);
   const [minLng, minLat, maxLng, maxLat] = data.debug?.bboxWgs84 ?? [0, 0, 0, 0];
+  const snapshot = session?.mapSnapshotDataUrl;
 
   return (
     <article
-      className="report-doc mx-auto max-w-[210mm] px-4 py-8 text-bloom-ink dark:text-bloom-cream print:max-w-none print:bg-white print:px-8 print:py-6 print:text-black print:text-[11pt] print:leading-snug"
+      className="report-doc mx-auto max-w-[210mm] rounded-[18px] bg-surface px-5 py-8 text-text-strong shadow-[0_14px_32px_rgba(2,6,23,0.16)] print:max-w-none print:rounded-none print:bg-white print:px-8 print:py-6 print:shadow-none print:text-black print:text-[11pt] print:leading-snug"
     >
       <div className="flex flex-wrap items-center justify-between gap-4 print:hidden">
         <div className="flex flex-wrap gap-4 text-sm font-semibold">
-          <Link className="text-bloom-brown underline-offset-2 hover:underline dark:text-bloom-gold-light" href="/">
+          <Link className="text-text-muted underline-offset-2 hover:underline" href="/">
             Back to map
           </Link>
-          <Link className="text-bloom-brown underline-offset-2 hover:underline dark:text-bloom-gold-light" href="/insights">
+          <Link className="text-text-muted underline-offset-2 hover:underline" href="/insights">
             Charts
           </Link>
-          <Link className="text-bloom-brown underline-offset-2 hover:underline dark:text-bloom-gold-light" href="/compare">
+          <Link className="text-text-muted underline-offset-2 hover:underline" href="/compare">
             Compare
           </Link>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
-            className="rounded-lg border border-bloom-brown/20 bg-white px-3 py-1.5 text-sm font-medium text-bloom-ink hover:bg-bloom-cream dark:border-bloom-gold/30 dark:bg-bloom-ink/80 dark:text-bloom-cream dark:hover:bg-bloom-brown/30"
+            className="focus-ring rounded-[14px] border border-border bg-bg-soft px-3 py-1.5 text-sm font-semibold text-text-strong hover:bg-bg-soft/80"
             onClick={() => {
               const blob = new Blob([layersToCsv(data.layers)], { type: "text/csv;charset=utf-8" });
               const a = document.createElement("a");
@@ -143,7 +154,7 @@ export default function ReportPage() {
           </button>
           <button
             type="button"
-            className="rounded-lg border border-bloom-brown/20 bg-white px-3 py-1.5 text-sm font-medium text-bloom-ink hover:bg-bloom-cream dark:border-bloom-gold/30 dark:bg-bloom-ink/80 dark:text-bloom-cream dark:hover:bg-bloom-brown/30"
+            className="focus-ring rounded-[14px] border border-border bg-bg-soft px-3 py-1.5 text-sm font-semibold text-text-strong hover:bg-bg-soft/80"
             onClick={() => {
               navigator.clipboard.writeText(methodsText).catch(() => {});
             }}
@@ -152,7 +163,7 @@ export default function ReportPage() {
           </button>
           <button
             type="button"
-            className="rounded-lg border border-bloom-brown/20 bg-white px-3 py-1.5 text-sm font-medium text-bloom-ink hover:bg-bloom-cream dark:border-bloom-gold/30 dark:bg-bloom-ink/80 dark:text-bloom-cream dark:hover:bg-bloom-brown/30"
+            className="focus-ring rounded-[14px] border border-border bg-bg-soft px-3 py-1.5 text-sm font-semibold text-text-strong hover:bg-bg-soft/80"
             onClick={() => window.print()}
           >
             Print / Save as PDF
@@ -161,91 +172,129 @@ export default function ReportPage() {
       </div>
 
       {/* Cover-style header */}
-      <header className="mt-6 border-b-2 border-bloom-ink/80 pb-6 print:mt-0 print:border-black print:pb-4">
-        <p className="text-xs font-semibold uppercase tracking-widest text-bloom-brown dark:text-bloom-gold-light print:text-black">
-          Bloom Foundry | QLD Environmental Screening
-        </p>
-        <h1 className="font-display mt-3 text-2xl font-semibold tracking-tight text-bloom-ink dark:text-bloom-cream print:text-xl print:text-black">
-          Indicative spatial screening report
-        </h1>
-        <p className="mt-2 max-w-prose text-sm text-bloom-brown/90 dark:text-bloom-cream/80 print:text-black">
-          Matters of State Environmental Significance (MSES) and related Queensland spatial layers intersected against
-          a user-defined area of interest. This document is for internal triage only unless issued under a qualified
-          environmental assessment.
-        </p>
+      <header className="mt-6 border-b border-border pb-6 print:mt-0 print:border-black print:pb-4">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-text-muted print:text-black">
+              Bloom Foundry · Environmental Screening
+            </p>
+            <h1 className="mt-3 text-2xl font-semibold tracking-tight text-text-strong print:text-xl print:text-black">
+              Desktop screening report (indicative)
+            </h1>
+            <p className="mt-2 max-w-prose text-sm leading-relaxed text-text-muted print:text-black">
+              Queensland spatial layer screening against a user-defined area of interest (AOI). Intended for early-stage
+              constraint triage and internal decision support—verify against authoritative mapping and statutory tests.
+            </p>
+          </div>
+          <div className="w-full max-w-[260px] rounded-[14px] border border-border bg-bg-soft p-3 print:border-black print:bg-transparent">
+            <p className="text-xs font-semibold text-text-muted print:text-black">Generated</p>
+            <p className="mt-1 text-sm font-semibold">
+              {generated.toLocaleString("en-AU", { dateStyle: "long", timeStyle: "short" })}
+            </p>
+            <p className="mt-1 text-[0.7rem] text-text-muted print:text-black">Ref: {data.generatedAt}</p>
+          </div>
+        </div>
 
-        <dl className="mt-6 grid gap-3 border border-bloom-brown/20 bg-bloom-cream/40 p-4 text-sm dark:border-bloom-gold/25 dark:bg-bloom-ink/40 print:border print:border-black print:bg-transparent">
+        <dl className="mt-6 grid gap-3 rounded-[14px] border border-border bg-bg-soft p-4 text-sm print:border-black print:bg-transparent">
           {session?.project?.clientName ? (
             <div className="grid grid-cols-[8rem_1fr] gap-2 print:grid-cols-[7.5rem_1fr]">
-              <dt className="font-semibold text-bloom-brown dark:text-bloom-gold-light print:text-black">Client</dt>
+              <dt className="font-semibold text-text-muted print:text-black">Client</dt>
               <dd>{session.project.clientName}</dd>
             </div>
           ) : null}
           {session?.project?.siteName ? (
             <div className="grid grid-cols-[8rem_1fr] gap-2 print:grid-cols-[7.5rem_1fr]">
-              <dt className="font-semibold text-bloom-brown dark:text-bloom-gold-light print:text-black">Site</dt>
+              <dt className="font-semibold text-text-muted print:text-black">Site</dt>
               <dd>{session.project.siteName}</dd>
             </div>
           ) : null}
           {session?.project?.jobId ? (
             <div className="grid grid-cols-[8rem_1fr] gap-2 print:grid-cols-[7.5rem_1fr]">
-              <dt className="font-semibold text-bloom-brown dark:text-bloom-gold-light print:text-black">Job / file ID</dt>
+              <dt className="font-semibold text-text-muted print:text-black">Job / file ID</dt>
               <dd>{session.project.jobId}</dd>
             </div>
           ) : null}
           {session?.project?.analyst ? (
             <div className="grid grid-cols-[8rem_1fr] gap-2 print:grid-cols-[7.5rem_1fr]">
-              <dt className="font-semibold text-bloom-brown dark:text-bloom-gold-light print:text-black">Analyst</dt>
+              <dt className="font-semibold text-text-muted print:text-black">Analyst</dt>
               <dd>{session.project.analyst}</dd>
             </div>
           ) : null}
           {session?.project?.reportDate ? (
             <div className="grid grid-cols-[8rem_1fr] gap-2 print:grid-cols-[7.5rem_1fr]">
-              <dt className="font-semibold text-bloom-brown dark:text-bloom-gold-light print:text-black">Cover date</dt>
+              <dt className="font-semibold text-text-muted print:text-black">Cover date</dt>
               <dd>{session.project.reportDate}</dd>
             </div>
           ) : null}
           <div className="grid grid-cols-[8rem_1fr] gap-2 print:grid-cols-[7.5rem_1fr]">
-            <dt className="font-semibold text-bloom-brown dark:text-bloom-gold-light print:text-black">Report date</dt>
+            <dt className="font-semibold text-text-muted print:text-black">Run time</dt>
             <dd>{generated.toLocaleString("en-AU", { dateStyle: "long", timeStyle: "short" })}</dd>
           </div>
           <div className="grid grid-cols-[8rem_1fr] gap-2 print:grid-cols-[7.5rem_1fr]">
-            <dt className="font-semibold text-bloom-brown dark:text-bloom-gold-light print:text-black">Reference time (ISO)</dt>
+            <dt className="font-semibold text-text-muted print:text-black">Reference (ISO)</dt>
             <dd className="font-mono text-xs">{data.generatedAt}</dd>
           </div>
           {data.audit ? (
             <>
               <div className="grid grid-cols-[8rem_1fr] gap-2 print:grid-cols-[7.5rem_1fr]">
-                <dt className="font-semibold text-bloom-brown dark:text-bloom-gold-light print:text-black">Layer pack</dt>
+                <dt className="font-semibold text-text-muted print:text-black">Layer pack</dt>
                 <dd>{formatLga(data.audit.lga)}</dd>
               </div>
               <div className="grid grid-cols-[8rem_1fr] gap-2 print:grid-cols-[7.5rem_1fr]">
-                <dt className="font-semibold text-bloom-brown dark:text-bloom-gold-light print:text-black">Layers queried</dt>
+                <dt className="font-semibold text-text-muted print:text-black">Layers queried</dt>
                 <dd>{data.audit.layersQueried}</dd>
               </div>
               {data.audit.appVersion ? (
                 <div className="grid grid-cols-[8rem_1fr] gap-2 print:grid-cols-[7.5rem_1fr]">
-                  <dt className="font-semibold text-bloom-brown dark:text-bloom-gold-light print:text-black">App version</dt>
+                  <dt className="font-semibold text-text-muted print:text-black">App version</dt>
                   <dd className="font-mono text-xs">{data.audit.appVersion}</dd>
                 </div>
               ) : null}
               {data.audit.catalogFingerprint ? (
                 <div className="grid grid-cols-[8rem_1fr] gap-2 print:grid-cols-[7.5rem_1fr]">
-                  <dt className="font-semibold text-bloom-brown dark:text-bloom-gold-light print:text-black">Catalog fingerprint</dt>
+                  <dt className="font-semibold text-text-muted print:text-black">Catalog fingerprint</dt>
                   <dd className="font-mono text-xs">{data.audit.catalogFingerprint}</dd>
                 </div>
               ) : null}
             </>
           ) : null}
         </dl>
+
+        {snapshot ? (
+          <div className="mt-6 rounded-[14px] border border-border bg-bg-soft p-4 print:border-black print:bg-transparent print:break-inside-avoid">
+            <p className="text-xs font-semibold text-text-muted print:text-black">Map snapshot (orientation only)</p>
+            <p className="mt-1 text-xs text-text-muted print:text-black">
+              Captured from the map workspace at the time of screening. Not a cadastral or surveyed boundary.
+            </p>
+            {/* eslint-disable-next-line @next/next/no-img-element -- data URL snapshot, print-friendly */}
+            <img
+              src={snapshot}
+              alt="Map snapshot"
+              className="mt-3 w-full rounded-[12px] border border-border print:border-black"
+            />
+          </div>
+        ) : null}
       </header>
 
-      {/* Executive summary */}
-      <section className="report-section mt-8 print:break-inside-avoid">
-        <h2 className="font-display border-b border-bloom-brown/25 pb-1 text-lg font-semibold text-bloom-ink dark:text-bloom-cream print:border-black print:text-base">
-          Executive summary
-        </h2>
-        <div className="mt-4 space-y-3 text-sm leading-relaxed text-bloom-brown/95 dark:text-bloom-cream/85 print:text-black">
+      <ReportSection
+        title="Summary"
+        subtitle="High-level outcomes and quality notes for the current AOI and layer pack."
+      >
+        <div className="grid gap-3 sm:grid-cols-3 print:grid-cols-3">
+          <div className="rounded-[14px] border border-border bg-bg-soft p-4 print:border-black print:bg-transparent">
+            <p className="text-xs font-semibold text-text-muted print:text-black">Hit layers</p>
+            <p className="mt-2 text-2xl font-semibold tracking-tight">{stats.hitCount}</p>
+          </div>
+          <div className="rounded-[14px] border border-border bg-bg-soft p-4 print:border-black print:bg-transparent">
+            <p className="text-xs font-semibold text-text-muted print:text-black">Total feature records</p>
+            <p className="mt-2 text-2xl font-semibold tracking-tight">{stats.totalFeatures.toLocaleString()}</p>
+          </div>
+          <div className="rounded-[14px] border border-border bg-bg-soft p-4 print:border-black print:bg-transparent">
+            <p className="text-xs font-semibold text-text-muted print:text-black">Run quality</p>
+            <p className="mt-2 text-2xl font-semibold tracking-tight">{stats.errors.length ? "Review" : "OK"}</p>
+          </div>
+        </div>
+        <div className="mt-5 space-y-3 text-sm leading-relaxed text-text-strong print:text-black">
           <p>
             A desktop spatial screening was performed by intersecting publicly available Queensland (and selected
             related) map layers with a user-defined polygon representing the area of interest (AOI)—drawn on the map or
@@ -275,14 +324,13 @@ export default function ReportPage() {
             </p>
           ) : null}
         </div>
-      </section>
+      </ReportSection>
 
-      {/* Scope */}
-      <section className="report-section mt-8 print:break-inside-avoid">
-        <h2 className="font-display border-b border-bloom-brown/25 pb-1 text-lg font-semibold text-bloom-ink dark:text-bloom-cream print:border-black print:text-base">
-          1. Scope and intended use
-        </h2>
-        <div className="mt-4 space-y-3 text-sm leading-relaxed text-bloom-brown/95 dark:text-bloom-cream/85 print:text-black">
+      <ReportSection
+        title="Details"
+        subtitle="Scope, intended use, and important limitations for interpretation."
+      >
+        <div className="space-y-3 text-sm leading-relaxed text-text-strong print:text-black">
           <p>
             This report is an <strong>indicative, non-statutory</strong> screening output. It does not constitute an
             environmental impact assessment, an EPBC Act referral recommendation, a clearing approval, a biodiversity
@@ -300,14 +348,10 @@ export default function ReportPage() {
             differ from the AOI, conclusions may not hold.
           </p>
         </div>
-      </section>
+      </ReportSection>
 
-      {/* Methodology */}
-      <section className="report-section mt-8 print:break-inside-avoid">
-        <h2 className="font-display border-b border-bloom-brown/25 pb-1 text-lg font-semibold text-bloom-ink dark:text-bloom-cream print:border-black print:text-base">
-          2. Methodology
-        </h2>
-        <ol className="mt-4 list-decimal space-y-2 pl-5 text-sm leading-relaxed text-bloom-brown/95 dark:text-bloom-cream/85 print:text-black">
+      <ReportSection title="Methodology" subtitle="How the AOI was prepared and how layers were queried.">
+        <ol className="list-decimal space-y-2 pl-5 text-sm leading-relaxed text-text-strong print:text-black">
           <li>
             The AOI was{" "}
             {session?.aoiSource === "draw" || !session?.aoiSource
@@ -328,7 +372,8 @@ export default function ReportPage() {
               : " No buffer was applied before querying."}
           </li>
           <li>
-            For each configured map layer, the application server issued an Esri REST <code className="rounded bg-bloom-cream/80 px-1 font-mono text-xs print:bg-neutral-100">query</code>{" "}
+            For each configured map layer, the application server issued an Esri REST{" "}
+            <code className="rounded bg-bg-soft px-1 font-mono text-xs print:bg-neutral-100">query</code>{" "}
             with spatial relationship <em>intersects</em> against the AOI polygon.
           </li>
           <li>
@@ -338,13 +383,13 @@ export default function ReportPage() {
           <li>Layer metadata and attribution are as published by the data custodian at the time of query.</li>
         </ol>
         {methodsText ? (
-          <div className="mt-4 rounded border border-bloom-brown/20 bg-bloom-cream/30 p-3 text-sm leading-relaxed text-bloom-brown/95 dark:bg-bloom-brown/25 dark:text-bloom-cream/85 print:border-black print:bg-transparent print:text-black">
-            <p className="font-semibold text-bloom-ink dark:text-bloom-cream print:text-black">Methods paragraph (copy-ready)</p>
+          <div className="mt-4 rounded-[14px] border border-border bg-bg-soft p-3 text-sm leading-relaxed print:border-black print:bg-transparent print:text-black">
+            <p className="font-semibold text-text-strong print:text-black">Methods paragraph (copy-ready)</p>
             <p className="mt-2 whitespace-pre-wrap">{methodsText}</p>
           </div>
         ) : null}
         {data.debug ? (
-          <div className="mt-4 rounded border border-bloom-brown/20 bg-bloom-cream/30 p-3 font-mono text-[0.7rem] leading-relaxed text-bloom-ink dark:bg-bloom-brown/25 dark:text-bloom-cream print:border-black print:bg-transparent print:text-black">
+          <div className="mt-4 rounded-[14px] border border-border bg-bg-soft p-3 font-mono text-[0.7rem] leading-relaxed print:border-black print:bg-transparent print:text-black">
             <p>
               Bounding box (WGS84, min/max): {minLng.toFixed(6)}, {minLat.toFixed(6)} to {maxLng.toFixed(6)},{" "}
               {maxLat.toFixed(6)}
@@ -355,14 +400,10 @@ export default function ReportPage() {
             </p>
           </div>
         ) : null}
-      </section>
+      </ReportSection>
 
-      {/* Study area */}
-      <section className="report-section mt-8 print:break-inside-avoid">
-        <h2 className="font-display border-b border-bloom-brown/25 pb-1 text-lg font-semibold text-bloom-ink dark:text-bloom-cream print:border-black print:text-base">
-          3. Study area reference
-        </h2>
-        <div className="mt-4 space-y-2 text-sm text-bloom-brown/95 dark:text-bloom-cream/85 print:text-black">
+      <ReportSection title="Study area reference" subtitle="Orientation metadata stored for this run.">
+        <div className="space-y-2 text-sm text-text-strong print:text-black">
           {data.cadastre ? (
             <>
               <p>{data.cadastre.note}</p>
@@ -370,7 +411,7 @@ export default function ReportPage() {
                 <strong>Approximate centroid (WGS84 / EPSG:4326):</strong> latitude {data.cadastre.centroidLat.toFixed(6)},
                 longitude {data.cadastre.centroidLng.toFixed(6)} (decimal degrees).
               </p>
-              <p className="break-all text-xs text-bloom-brown/80 dark:text-bloom-cream/70 print:text-black">
+              <p className="break-all text-xs text-text-muted print:text-black">
                 Orientation map (third party): {data.cadastre.openMapUrl}
               </p>
             </>
@@ -378,54 +419,37 @@ export default function ReportPage() {
             <p>No centroid metadata was stored for this run.</p>
           )}
         </div>
-      </section>
+      </ReportSection>
 
       {/* Results table - all layers */}
-      <section className="report-section mt-8 print:break-before-auto">
-        <h2 className="font-display border-b border-bloom-brown/25 pb-1 text-lg font-semibold text-bloom-ink dark:text-bloom-cream print:border-black print:text-base">
-          4. Spatial intersection results
-        </h2>
-        <p className="mt-3 text-sm leading-relaxed text-bloom-brown/95 dark:text-bloom-cream/85 print:text-black">
-          Table 1 summarises every layer interrogated. &ldquo;Intersecting features&rdquo; is the count returned by the
-          map service for the AOI; it is not necessarily a count of distinct on-ground values where features fragment or
-          overlap.
-        </p>
-
-        <div className="mt-4 overflow-x-auto print:overflow-visible">
-          <table className="w-full border-collapse border border-bloom-brown/25 text-left text-xs dark:border-bloom-gold/30 print:border-black print:text-[9pt]">
-            <thead>
-              <tr className="bg-bloom-cream/60 dark:bg-bloom-brown/30 print:bg-neutral-200">
-                <th className="border border-bloom-brown/25 px-2 py-2 font-semibold dark:border-bloom-gold/30 print:border-black">
-                  Layer
-                </th>
-                <th className="border border-bloom-brown/25 px-2 py-2 font-semibold dark:border-bloom-gold/30 print:border-black">
-                  Theme
-                </th>
-                <th className="border border-bloom-brown/25 px-2 py-2 font-semibold dark:border-bloom-gold/30 print:border-black">
-                  Tier
-                </th>
-                <th className="border border-bloom-brown/25 px-2 py-2 font-semibold dark:border-bloom-gold/30 print:border-black">
-                  Count
-                </th>
-                <th className="border border-bloom-brown/25 px-2 py-2 font-semibold dark:border-bloom-gold/30 print:border-black">
-                  Status
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.layers.map((layer) => (
-                <ResultTableRow key={layer.catalogId} layer={layer} />
-              ))}
-            </tbody>
-          </table>
+      <ReportSection
+        title="Spatial intersection results"
+        subtitle="Every configured layer interrogated for the current AOI. Counts reflect the service response for an intersects query."
+      >
+        <div className="mt-2">
+          <BrandedTable
+            columns={
+              <>
+                <Th>Layer</Th>
+                <Th>Theme</Th>
+                <Th>Tier</Th>
+                <Th>Count</Th>
+                <Th>Status</Th>
+              </>
+            }
+          >
+            {data.layers.map((layer) => (
+              <ResultTableRow key={layer.catalogId} layer={layer} />
+            ))}
+          </BrandedTable>
         </div>
 
         {hits.length > 0 ? (
           <>
-            <h3 className="font-display mt-8 text-base font-semibold text-bloom-ink dark:text-bloom-cream print:text-black">
-              4.1 Narrative summary of layers with intersections
+            <h3 className="mt-8 text-base font-semibold text-text-strong print:text-black">
+              Narrative summary of layers with intersections
             </h3>
-            <p className="mt-2 text-sm text-bloom-brown/95 dark:text-bloom-cream/85 print:text-black">
+            <p className="mt-2 text-sm text-text-strong print:text-black">
               The following layers returned one or more intersecting features. Interpret alongside field survey,
               planning scheme mapping, and statutory tests.
             </p>
@@ -438,42 +462,42 @@ export default function ReportPage() {
         ) : null}
 
         {noHitLayers.length > 0 && hits.length === 0 ? (
-          <p className="mt-4 text-sm italic text-bloom-brown/85 dark:text-bloom-cream/75 print:text-black">
+          <p className="mt-4 text-sm italic text-text-muted print:text-black">
             No layers returned a positive intersection for this AOI under the current configuration.
           </p>
         ) : null}
 
         {noHitLayers.length > 0 && hits.length > 0 ? (
           <>
-            <h3 className="font-display mt-8 text-base font-semibold text-bloom-ink dark:text-bloom-cream print:text-black">
-              4.2 Layers with no intersection (nil return)
+            <h3 className="mt-8 text-base font-semibold text-text-strong print:text-black">
+              Layers with no intersection (nil return)
             </h3>
-            <p className="mt-2 text-sm text-bloom-brown/95 dark:text-bloom-cream/85 print:text-black">
+            <p className="mt-2 text-sm text-text-strong print:text-black">
               The following configured layers returned zero intersecting features for the AOI (nil spatial overlap in the
               source data at the query scale):
             </p>
-            <ul className="mt-2 list-inside list-disc text-sm text-bloom-brown/90 dark:text-bloom-cream/80 print:text-black">
+            <ul className="mt-2 list-inside list-disc text-sm text-text-strong print:text-black">
               {noHitLayers.map((l) => (
                 <li key={l.catalogId}>{l.name}</li>
               ))}
             </ul>
           </>
         ) : null}
-      </section>
+      </ReportSection>
 
       {/* Further assessment */}
-      <section className="report-section mt-10 print:break-inside-avoid">
-        <h2 className="font-display border-b border-bloom-brown/25 pb-1 text-lg font-semibold text-bloom-ink dark:text-bloom-cream print:border-black print:text-base">
-          5. Further assessment and statutory registers
-        </h2>
-        <div className="mt-4 space-y-3 text-sm leading-relaxed text-bloom-brown/95 dark:text-bloom-cream/85 print:text-black">
+      <ReportSection
+        title="Matters of National Environmental Significance (MNES)"
+        subtitle="Workflow prompts for Commonwealth screening (not spatially queried by this tool)."
+      >
+        <div className="space-y-3 text-sm leading-relaxed text-text-strong print:text-black">
           <p>
             Where development may affect matters of national environmental significance, proponents typically use the
             Commonwealth Protected Matters Search Tool (PMST) and seek advice under the <em>Environment Protection and
             Biodiversity Conservation Act 1999</em> framework. For Queensland biodiversity and MSES products, Biomaps,
             Queensland Globe, and agency databases may be used in addition to this screening.
           </p>
-          <p className="rounded border border-amber-200/80 bg-amber-50/90 p-3 text-bloom-ink dark:border-amber-500/30 dark:bg-amber-950/30 dark:text-bloom-cream print:border-black print:bg-neutral-100 print:text-black">
+          <p className="rounded-[14px] border border-warning/35 bg-warning/10 p-3 print:border-black print:bg-neutral-100 print:text-black">
             <strong>Spot-check in Queensland Globe:</strong> for any layer outcome that could change a project decision,
             confirm intersections visually in Globe (or the source MapServer) at an appropriate scale and with your
             authoritative site boundary — automated intersection alone is not a substitute for visual verification.
@@ -481,9 +505,9 @@ export default function ReportPage() {
         </div>
 
         {data.consultantWorkflow ? (
-          <div className="mt-4 rounded border border-bloom-brown/20 bg-bloom-cream/30 p-4 text-sm dark:bg-bloom-brown/20 print:border-black print:bg-transparent">
-            <p className="font-semibold text-bloom-ink dark:text-bloom-cream print:text-black">Workflow links (centroid-assisted)</p>
-            <p className="mt-2 text-bloom-brown/90 dark:text-bloom-cream/80 print:text-black">{data.consultantWorkflow.summary}</p>
+          <div className="mt-4 rounded-[14px] border border-border bg-bg-soft p-4 text-sm print:border-black print:bg-transparent">
+            <p className="font-semibold text-text-strong print:text-black">Workflow links (centroid-assisted)</p>
+            <p className="mt-2 text-text-muted print:text-black">{data.consultantWorkflow.summary}</p>
             <ul className="mt-3 list-disc space-y-2 pl-5 break-all text-xs">
               <li>
                 <strong>PMST (map):</strong> {data.consultantWorkflow.pmstMapUrl}
@@ -499,22 +523,20 @@ export default function ReportPage() {
         ) : null}
 
         {data.registerHints && data.registerHints.length > 0 ? (
-          <ol className="mt-6 list-decimal space-y-3 pl-5 text-sm text-bloom-brown/95 dark:text-bloom-cream/85 print:text-black">
+          <ol className="mt-6 list-decimal space-y-3 pl-5 text-sm text-text-strong print:text-black">
             {data.registerHints.map((h) => (
               <li key={h.id}>
                 <span className="font-semibold">{h.title}</span> - {h.description}{" "}
-                <span className="break-all text-xs text-bloom-brown/80 dark:text-bloom-cream/70">({h.url})</span>
+                <span className="break-all text-xs text-text-muted">({h.url})</span>
               </li>
             ))}
           </ol>
         ) : null}
-      </section>
+      </ReportSection>
 
       {/* Disclaimer */}
-      <section className="report-section mt-10 border-t-2 border-bloom-brown/30 pt-6 text-xs leading-relaxed text-bloom-brown/90 dark:border-bloom-gold/30 dark:text-bloom-cream/75 print:border-black print:text-[9pt] print:text-black">
-        <h2 className="font-display text-base font-semibold text-bloom-ink dark:text-bloom-cream print:text-black">
-          6. Limitations and disclaimer
-        </h2>
+      <section className="report-section mt-10 border-t border-border pt-6 text-xs leading-relaxed text-text-muted print:border-black print:text-[9pt] print:text-black">
+        <h2 className="text-base font-semibold text-text-strong print:text-black">Limitations and disclaimer</h2>
         <ul className="mt-3 list-inside list-disc space-y-2">
           <li>
             Mapped data are sourced from third-party services; currency, scale, positional accuracy, and completeness
@@ -535,8 +557,8 @@ export default function ReportPage() {
         </ul>
       </section>
 
-      <footer className="report-section mt-8 border-t border-bloom-brown/20 pt-4 text-center text-[0.65rem] text-bloom-brown/60 dark:border-bloom-gold/25 dark:text-bloom-cream/50 print:border-black print:text-black">
-        Generated by QLD Environmental Screening (Bloom Foundry prototype)
+      <footer className="report-section mt-8 border-t border-border pt-4 text-center text-[0.65rem] text-text-muted print:border-black print:text-black">
+        Generated by Bloom Foundry Environmental Screening
         {data.audit?.appVersion ? ` · v${data.audit.appVersion}` : ""}
         {data.audit?.catalogFingerprint ? ` · ${data.audit.catalogFingerprint}` : ""}. Not for statutory notification unless
         endorsed.
@@ -552,15 +574,13 @@ function ResultTableRow({ layer }: { layer: LayerScreeningResult }) {
 
   return (
     <tr className="align-top print:break-inside-avoid">
-      <td className="border border-bloom-brown/25 px-2 py-1.5 dark:border-bloom-gold/30 print:border-black">{layer.name}</td>
-      <td className="border border-bloom-brown/25 px-2 py-1.5 dark:border-bloom-gold/30 print:border-black">
-        {domainLabel(layer.domain)}
-      </td>
-      <td className="border border-bloom-brown/25 px-2 py-1.5 dark:border-bloom-gold/30 print:border-black">{layer.tier}</td>
-      <td className="border border-bloom-brown/25 px-2 py-1.5 tabular-nums dark:border-bloom-gold/30 print:border-black">
-        {layer.featureCount}
-      </td>
-      <td className="border border-bloom-brown/25 px-2 py-1.5 dark:border-bloom-gold/30 print:border-black">{status}</td>
+      <Td>{layer.name}</Td>
+      <Td>{domainLabel(layer.domain)}</Td>
+      <Td>{layer.tier}</Td>
+      <Td>
+        <span className="tabular-nums">{layer.featureCount}</span>
+      </Td>
+      <Td>{status}</Td>
     </tr>
   );
 }
@@ -568,22 +588,22 @@ function ResultTableRow({ layer }: { layer: LayerScreeningResult }) {
 function HitDetail({ layer }: { layer: LayerScreeningResult }) {
   const g = GLOSSARY[layer.glossaryKey];
   return (
-    <li className="text-bloom-ink dark:text-bloom-cream print:text-black">
+    <li className="text-text-strong print:text-black">
       <p className="font-semibold">{layer.name}</p>
-      <p className="text-xs text-bloom-brown/75 dark:text-bloom-cream/65 print:text-black">
+      <p className="text-xs text-text-muted print:text-black">
         {domainLabel(layer.domain)} | {tierLabel(layer.tier)} | Features intersecting: {layer.featureCount}
       </p>
       {layer.exceededTransferLimit ? (
-        <p className="mt-1 text-xs font-medium text-amber-800 dark:text-amber-200 print:text-black">
+        <p className="mt-1 text-xs font-medium text-text-strong print:text-black">
           Server transfer limit may apply; feature list may be incomplete.
         </p>
       ) : null}
-      {layer.error ? <p className="mt-1 text-xs text-red-700 dark:text-red-300 print:text-black">Error: {layer.error}</p> : null}
+      {layer.error ? <p className="mt-1 text-xs text-text-strong print:text-black">Error: {layer.error}</p> : null}
       {g ? (
-        <div className="mt-2 text-bloom-brown/95 dark:text-bloom-cream/85 print:text-black">
-          <p className="italic">{g.title}</p>
+        <div className="mt-2 text-text-strong print:text-black">
+          <p className="text-sm font-semibold">{g.title}</p>
           <p className="mt-1">{g.summary}</p>
-          <p className="mt-1 text-bloom-brown/85 dark:text-bloom-cream/75 print:text-black">
+          <p className="mt-1 text-text-muted print:text-black">
             <strong>Recommended next steps:</strong> {g.nextSteps}
           </p>
           {g.references && g.references.length > 0 ? (
@@ -597,14 +617,14 @@ function HitDetail({ layer }: { layer: LayerScreeningResult }) {
           ) : null}
         </div>
       ) : null}
-      <p className="mt-2 text-xs text-bloom-brown/65 dark:text-bloom-cream/55 print:text-black">Source: {layer.attribution}</p>
+      <p className="mt-2 text-xs text-text-muted print:text-black">Source: {layer.attribution}</p>
       <details className="mt-2 print:hidden">
-        <summary className="cursor-pointer text-xs text-bloom-brown/70">Sample attributes (first records)</summary>
-        <pre className="mt-2 max-h-40 overflow-auto rounded bg-bloom-cream/80 p-2 font-mono text-[0.65rem] text-bloom-ink dark:bg-bloom-brown/40 dark:text-bloom-cream">
+        <summary className="cursor-pointer text-xs text-text-muted">Sample attributes (first records)</summary>
+        <pre className="mt-2 max-h-40 overflow-auto rounded bg-bg-soft p-2 font-mono text-[0.65rem] text-text-strong">
           {JSON.stringify(layer.features.slice(0, 5), null, 2)}
         </pre>
       </details>
-      <pre className="mt-2 hidden max-h-48 overflow-hidden rounded border border-bloom-brown/20 bg-neutral-50 p-2 font-mono text-[0.6rem] print:block print:break-inside-avoid print:text-black">
+      <pre className="mt-2 hidden max-h-48 overflow-hidden rounded border border-border bg-bg-soft p-2 font-mono text-[0.6rem] print:block print:break-inside-avoid print:border-black print:text-black">
         {JSON.stringify(layer.features.slice(0, 3), null, 2)}
       </pre>
     </li>

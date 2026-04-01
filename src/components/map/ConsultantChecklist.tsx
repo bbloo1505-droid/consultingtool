@@ -28,7 +28,7 @@ function loadItemsFromSession(): Item[] {
   return DEFAULT_ITEMS;
 }
 
-export function ConsultantChecklist() {
+export function ConsultantChecklist({ embedded = false }: { embedded?: boolean }) {
   const [items, setItems] = useState<Item[]>(DEFAULT_ITEMS);
 
   useEffect(() => {
@@ -53,30 +53,29 @@ export function ConsultantChecklist() {
     persist(DEFAULT_ITEMS.map((i) => ({ ...i, done: false })));
   };
 
-  return (
-    <div className="rounded-xl border border-bloom-brown/15 bg-white p-4 shadow-sm ring-1 ring-bloom-brown/5 dark:border-bloom-gold/20 dark:bg-bloom-ink/60 dark:ring-bloom-gold/10">
+  const content = (
+    <>
       <div className="flex items-center justify-between gap-2">
-        <h3 className="font-display text-sm font-semibold text-bloom-ink dark:text-bloom-cream">Consultant follow-up checklist</h3>
+        <h3 className="text-sm font-semibold text-bg-soft">Consultant follow-up checklist</h3>
         <button
           type="button"
           onClick={reset}
-          className="text-xs font-medium text-bloom-brown/70 underline dark:text-bloom-gold-light/80"
+          className="focus-ring rounded-full px-2 py-1 text-xs font-semibold text-bg-soft/65 hover:bg-surface/10 hover:text-bg-soft"
         >
           Reset
         </button>
       </div>
-      <p className="mt-1 text-xs text-bloom-brown/70 dark:text-bloom-cream/60">
-        Tick items as you complete them (stored in this browser session).
-      </p>
+      <p className="mt-1 text-xs text-bg-soft/60">Tick items as you complete them (stored in this browser session).</p>
       <ul className="mt-3 space-y-2">
         {items.map((i) => (
-          <li key={i.id} className="flex items-start gap-2 text-xs leading-relaxed text-bloom-brown/90 dark:text-bloom-cream/80">
+          <li key={i.id} className="flex items-start gap-2 text-sm leading-relaxed text-bg-soft/75">
             <input
               id={`chk-${i.id}`}
               type="checkbox"
               checked={i.done}
               onChange={() => toggle(i.id)}
-              className="mt-0.5 h-4 w-4 shrink-0 rounded border-bloom-brown/30 text-bloom-gold focus:ring-bloom-gold"
+              style={{ accentColor: "var(--brand-primary)" }}
+              className="mt-0.5 h-4 w-4 shrink-0 rounded border border-border bg-surface/10"
             />
             <label htmlFor={`chk-${i.id}`} className="cursor-pointer">
               {i.label}
@@ -84,6 +83,14 @@ export function ConsultantChecklist() {
           </li>
         ))}
       </ul>
+    </>
+  );
+
+  if (embedded) return content;
+
+  return (
+    <div className="rounded-[16px] border border-border bg-bg-panel/55 p-4 shadow-[0_10px_24px_rgba(2,6,23,0.12)]">
+      {content}
     </div>
   );
 }
