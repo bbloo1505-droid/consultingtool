@@ -27,7 +27,7 @@ export function Tabs<T extends string>({
             className={[
               "focus-ring inline-flex h-9 items-center gap-2 rounded-full border px-3 text-sm font-semibold transition",
               isActive
-                ? "border-brand-primary/50 bg-brand-primary/15 text-bg-soft"
+                ? "border-brand-primary/55 bg-brand-primary/18 text-bg-soft shadow-[0_10px_22px_rgba(214,165,35,0.10)]"
                 : "border-border bg-surface/10 text-bg-soft/70 hover:bg-surface/15 hover:text-bg-soft",
             ].join(" ")}
           >

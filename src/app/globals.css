@@ -23,6 +23,7 @@
   --radius-md: 14px;
   --shadow-soft: 0 10px 24px rgba(2, 6, 23, 0.10), 0 1px 0 rgba(2, 6, 23, 0.06);
   --shadow-card: 0 14px 32px rgba(2, 6, 23, 0.16), 0 2px 0 rgba(2, 6, 23, 0.08);
+  --shadow-glow: 0 18px 40px rgba(214, 165, 35, 0.10);
 
   /* Back-compat names used across the app (mapped to new palette). */
   --background: var(--bg-soft);
@@ -66,10 +67,26 @@ body {
   background: var(--bg-main);
   color: var(--bg-soft);
   font-family: var(--font-geist-sans), system-ui, sans-serif;
+  position: relative;
 }
 
 .font-display {
   font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+/* Subtle Bloom “premium” background (no gimmicky motion) */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(900px 420px at 18% 8%, rgba(214, 165, 35, 0.12), rgba(214, 165, 35, 0) 58%),
+    radial-gradient(820px 440px at 78% 16%, rgba(255, 253, 248, 0.08), rgba(255, 253, 248, 0) 62%),
+    radial-gradient(700px 420px at 70% 80%, rgba(17, 28, 45, 0.42), rgba(17, 28, 45, 0) 62%);
+  opacity: 0.9;
+  mix-blend-mode: normal;
+  z-index: -1;
 }
 
 ::selection {

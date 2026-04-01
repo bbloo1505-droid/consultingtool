@@ -15,12 +15,15 @@ export function SidebarSection({
 }) {
   return (
     <details
-      className="group rounded-[16px] border border-border bg-bg-panel/65 shadow-[0_10px_24px_rgba(2,6,23,0.12)]"
+      className="group rounded-[16px] border border-border bg-bg-panel/65 shadow-[0_10px_24px_rgba(2,6,23,0.12)] ring-1 ring-transparent open:ring-brand-primary/15"
       open={defaultOpen}
     >
       <summary className="focus-ring flex cursor-pointer list-none items-start justify-between gap-3 rounded-[16px] px-4 py-3">
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-bg-soft">{title}</p>
+          <div className="flex items-center gap-2">
+            <span className="mt-0.5 inline-flex h-2 w-2 shrink-0 rounded-full bg-brand-primary/90 shadow-[0_0_0_3px_rgba(214,165,35,0.10)]" />
+            <p className="text-sm font-semibold tracking-tight text-bg-soft">{title}</p>
+          </div>
           {description ? (
             <p className="mt-0.5 text-xs leading-snug text-bg-soft/60">{description}</p>
           ) : null}

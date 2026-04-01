@@ -150,11 +150,9 @@ export function MapScreen() {
 
     const draw = new MapboxDraw({
       displayControlsDefault: false,
-      controls: {
-        polygon: true,
-        trash: true,
-      },
-      defaultMode: "draw_polygon",
+      // Draw actions are rendered in the sidebar (not as on-map buttons).
+      controls: {},
+      defaultMode: "simple_select",
     });
 
     map.addControl(draw as unknown as maplibregl.IControl, "top-left");
@@ -476,6 +474,29 @@ export function MapScreen() {
     setError(null);
   };
 
+  const startDrawPolygon = () => {
+    const draw = drawRef.current;
+    if (!draw) return;
+    try {
+      draw.changeMode("draw_polygon");
+      setStatus("Draw your AOI on the map. Click to add vertices, then click the first point to finish.");
+      setAoiSource("draw");
+    } catch {
+      // ignore
+    }
+  };
+
+  const deleteSelected = () => {
+    const draw = drawRef.current;
+    if (!draw) return;
+    try {
+      draw.trash();
+      setStatus("Selection deleted. Draw or upload a boundary to continue.");
+    } catch {
+      // ignore
+    }
+  };
+
   const recenter = () => {
     const f = getAoiFeature();
     if (f) fitMapToFeature(f);
@@ -511,7 +532,7 @@ export function MapScreen() {
     <div className="grid gap-4 lg:grid-cols-[400px_1fr] lg:items-start">
       <aside className="lg:sticky lg:top-[5.25rem] lg:max-h-[calc(100vh-6.25rem)] lg:overflow-auto">
         <div className="space-y-3">
-          <div className="rounded-[16px] border border-border bg-bg-panel/65 p-4 shadow-[0_14px_32px_rgba(2,6,23,0.16)]">
+          <div className="rounded-[16px] border border-border bg-bg-panel/65 p-4 shadow-[0_14px_32px_rgba(2,6,23,0.16)] ring-1 ring-brand-primary/10">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-bg-soft">Desktop screening workspace</p>
@@ -603,7 +624,24 @@ export function MapScreen() {
               ) : null
             }
           >
-            <form onSubmit={onAddressParcelSearch} className="grid gap-3">
+            <div className="grid gap-2">
+              <Button type="button" variant="primary" onClick={startDrawPolygon} disabled={!mapReady}>
+                Draw polygon on map
+              </Button>
+              <div className="grid grid-cols-2 gap-2">
+                <Button type="button" variant="secondary" onClick={deleteSelected} disabled={!mapReady}>
+                  Delete selected
+                </Button>
+                <Button type="button" variant="danger" onClick={clearAoi} disabled={!mapReady || !aoiReady}>
+                  Clear AOI
+                </Button>
+              </div>
+              <p className="text-xs leading-snug text-bg-soft/60">
+                Tip: click to place vertices, then click the first point to finish. You can select and adjust vertices after drawing.
+              </p>
+            </div>
+
+            <form onSubmit={onAddressParcelSearch} className="mt-4 grid gap-3">
               <div>
                 <FieldLabel
                   label="Queensland address → indicative parcel boundary"
@@ -744,13 +782,10 @@ export function MapScreen() {
       </aside>
 
       <section className="min-w-0">
-        <div className="rounded-[18px] border border-border bg-bg-panel/45 shadow-[0_14px_32px_rgba(2,6,23,0.16)]">
+        <div className="rounded-[18px] border border-border bg-bg-panel/45 shadow-[0_14px_32px_rgba(2,6,23,0.16)] ring-1 ring-white/5">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
             <div className="flex min-w-0 items-center gap-2">
               <p className="text-sm font-semibold text-bg-soft">Map workspace</p>
-              <span className="hidden text-xs text-bg-soft/55 md:inline">
-                Draw tools are in the map. Keep the map clean; use results below for detail.
-              </span>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <Button size="sm" variant="ghost" onClick={recenter} disabled={!aoiReady}>
@@ -781,7 +816,7 @@ export function MapScreen() {
           </div>
         </div>
 
-        <div className="mt-4 rounded-[18px] border border-border bg-bg-panel/45 p-4 shadow-[0_14px_32px_rgba(2,6,23,0.16)]">
+        <div className="mt-4 rounded-[18px] border border-border bg-bg-panel/45 p-4 shadow-[0_14px_32px_rgba(2,6,23,0.16)] ring-1 ring-white/5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="min-w-0">
               <p className="text-sm font-semibold text-bg-soft">Results</p>
