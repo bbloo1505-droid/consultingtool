@@ -38,20 +38,19 @@ export function AppHeader({ title, rightSlot }: AppHeaderProps) {
     <header className="sticky top-0 z-40 border-b border-border bg-bg-main/92 backdrop-blur print:hidden">
       <div className="mx-auto flex h-14 max-w-[1440px] items-center gap-4 px-4">
         <div className="flex min-w-0 items-center gap-3">
-          <Link href="/" className="focus-ring inline-flex items-center gap-3 rounded-lg pr-2">
-            <span className="relative h-8 w-8 overflow-hidden rounded-[10px] bg-surface/10 ring-1 ring-border">
-              <Image
-                src="/bloom-foundry-logo.png"
-                alt="Bloom Foundry"
-                fill
-                sizes="32px"
-                className="object-cover"
-                priority
-              />
-            </span>
-            <span className="hidden text-sm font-semibold tracking-tight text-bg-soft sm:inline">
-              Bloom Foundry
-            </span>
+          <Link
+            href="/"
+            className="focus-ring inline-flex items-center rounded-lg px-1 py-1.5 transition hover:bg-surface/10"
+            aria-label="Bloom Foundry home"
+          >
+            <Image
+              src="/bloom-foundry-logo.png"
+              alt="Bloom Foundry"
+              width={132}
+              height={28}
+              priority
+              className="h-7 w-auto object-contain"
+            />
           </Link>
           <span className="hidden h-6 w-px bg-border sm:block" />
           <div className="min-w-0">
