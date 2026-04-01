@@ -40,7 +40,8 @@ body::-webkit-scrollbar {
 @media print {
   @page {
     size: A4 portrait;
-    margin: 14mm 16mm;
+    /* Reduce default whitespace so the report fills page better */
+    margin: 8mm 10mm;
   }
 
   html,
@@ -51,6 +52,12 @@ body::-webkit-scrollbar {
   .report {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+  }
+
+  /* Ensure the printable document anchors to the page top */
+  .report-doc {
+    margin: 0 !important;
+    max-width: none !important;
   }
 
   thead {
